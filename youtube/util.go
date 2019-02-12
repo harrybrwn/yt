@@ -34,7 +34,6 @@ func get(urlStr string) ([]byte, error) {
 		URL: parsedURL,
 	}
 
-	req.Header.Set("User-Agent", fmt.Sprintf("%s%d", agent, time.Now().Nanosecond()))
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
