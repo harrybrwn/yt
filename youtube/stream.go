@@ -72,7 +72,6 @@ func GetBestStream(c *[]Stream) *Stream {
 
 // DownloadFromStream accepts a stream and downloads it to a given file name.
 func DownloadFromStream(s *Stream, fname string) error {
-	defer _log("Successful Download.")
 	b, err := get(s.URL)
 	if err != nil {
 		return err

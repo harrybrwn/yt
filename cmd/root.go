@@ -29,7 +29,6 @@ var (
 	// flag variabels
 	cfgFile string
 	path    string
-	logging bool
 	timed   bool // hidden flag var
 
 	cwd, _     = os.Getwd()
@@ -63,13 +62,7 @@ func Execute() {
 }
 
 func init() {
-	if logging {
-		youtube.Logging = true
-	}
-
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
-	rootCmd.PersistentFlags().BoolVar(&logging, "log", false, "toggle the internal logger")
-	// rootCmd.PersistentFlags().MarkHidden("time")
 
 	rootCmd.SetUsageTemplate(ytTemplate)
 }
@@ -89,7 +82,6 @@ func handleVideos(ids []string, fn func(*youtube.Video) error) error {
 			if err != nil {
 				return err
 			}
-			log("made vid, about to download...")
 			go func() {
 				err = fn(v)
 				if err != nil {
@@ -104,7 +96,6 @@ func handleVideos(ids []string, fn func(*youtube.Video) error) error {
 		if err != nil {
 			return err
 		}
-		log("made only vid, about to download it...")
 		return fn(v)
 	}
 	return nil

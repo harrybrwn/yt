@@ -51,15 +51,13 @@ func getRaw(id string) ([]byte, error) {
 func initVideoData(in []byte, v *Video) error {
 	vd := VideoData{}
 	err := json.Unmarshal(in, &vd)
-	if err != nil {
-		return err
-	}
+
 	v.baseVideo = vd.VideoDetails.baseVideo
 	v.Streams = vd.StreamingData.Formats
 	vstream, astream := sortStreams(&vd.StreamingData.AdaptiveFormats)
 	v.VideoStreams, v.AudioStreams = *vstream, *astream
 	v.FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
-	return nil
+	return err
 }
 
 // Video represents a youbube video.

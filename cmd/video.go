@@ -28,7 +28,6 @@ var videoCmd = &cobra.Command{
 	Short: "A tool for downloading youtube videos.",
 	Long:  `To download multiple videos use 'yt video <id> <id>...'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log("arguments passed:", args)
 		return handleVideos(args, func(v *youtube.Video) error {
 			var err error
 			path, err = filepath.Abs(path)
