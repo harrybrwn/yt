@@ -1,6 +1,8 @@
 package youtube
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -15,4 +17,53 @@ func TestNewVideo(t *testing.T) {
 	if v.Author != "Vulf" {
 		t.Error("wrong author")
 	}
+
+	err = v.Download(temp())
+	if err != nil {
+		t.Error(err)
+	}
+	err = v.DownloadAudio(temp())
+	if err != nil {
+		t.Error(err)
+	}
+	// err = v.DownloadVideo(temp())
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+}
+
+func TestVideo_Err(t *testing.T) {
+	_, err := NewVideo("")
+	if err == nil {
+		t.Error("expected error")
+	}
+
+	err = initVideoData([]byte(""), &Video{})
+	if err == nil {
+		t.Error("expected error")
+	}
+}
+
+func TestGetRaw(t *testing.T) {
+	b, err := getRaw("ferZnZ0_rSM")
+	if err != nil {
+		t.Error(err)
+	}
+	if b == nil {
+		t.Error("got empty byte array")
+	}
+}
+
+func temp() string {
+	f, err := ioutil.TempFile("", "yt")
+	if err != nil {
+		panic(err)
+	}
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		panic(err)
+	}
+	return f.Name()
 }

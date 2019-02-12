@@ -24,7 +24,7 @@ var (
 func getRaw(id string) ([]byte, error) {
 	b, err := get(videoURL(id))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if !partialConfigREGEX.Match(b) {
 		return nil, errors.New("couldn't find data")
