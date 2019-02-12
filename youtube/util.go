@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -18,11 +19,21 @@ const (
 	agent    = "Video download cli tool"
 )
 
-func get(url string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func get(urlStr string) ([]byte, error) {
+	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
 	}
+	req := &http.Request{
+		Method: "GET",
+		Host:   parsedURL.Host,
+		Proto:  "HTTP/1.1",
+		Header: http.Header{
+			"User-Agent": []string{fmt.Sprintf("%s%d", agent, time.Now().Nanosecond())},
+		},
+		URL: parsedURL,
+	}
+
 	req.Header.Set("User-Agent", fmt.Sprintf("%s%d", agent, time.Now().Nanosecond()))
 	resp, err := client.Do(req)
 	if err != nil {
