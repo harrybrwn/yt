@@ -16,7 +16,7 @@ var (
 
 const (
 	badchars = `\/:*?"<>|.`
-	agent    = "Video download cli tool"
+	agent    = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/500.0 (KHTML, like Gecko) Chrome/70.0.0.0 Safari/500.0"
 )
 
 func get(urlStr string) ([]byte, error) {

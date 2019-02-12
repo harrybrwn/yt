@@ -4,6 +4,7 @@ TODO
 *.mp4
 *.mpa
 *.py
+*.html
 
 # Testing
 coverage.html
