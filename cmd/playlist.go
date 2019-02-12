@@ -28,7 +28,6 @@ var playlistCmd = &cobra.Command{
 	Use:   "playlist [ids...]",
 	Short: "A tool for downloading youtube playlists.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var v *youtube.Video
 		var err error
 		audio, err := cmd.Flags().GetBool("audio")
 		if err != nil {
@@ -36,45 +35,69 @@ var playlistCmd = &cobra.Command{
 		}
 
 		for _, id := range args {
-			if path == cwd {
-				path = filepath.Join(path, id)
-			}
-			path, err = filepath.Abs(path)
-
-			if _, err = os.Stat(path); os.IsNotExist(err) {
-				err = os.Mkdir(path, os.ModeDir)
-			}
+			err = downloadPlaylist(id, audio)
 			if err != nil {
 				return err
-			}
-
-			plst, err := youtube.NewPlaylist(id)
-			if err != nil {
-				return err
-			}
-			for vID := range plst.VideoIds() {
-				wg.Add(1)
-				v, err = youtube.NewVideo(vID)
-				if err != nil {
-					return err
-				}
-				go func() {
-					if audio {
-						err = v.DownloadAudio(filepath.Join(path, v.FileName) + aExt)
-					} else {
-						err = v.Download(filepath.Join(path, v.FileName) + pExt)
-					}
-
-					if err != nil {
-						panic(err)
-					}
-					wg.Done()
-				}()
 			}
 		}
 		wg.Wait()
 		return nil
 	},
+}
+
+func varifyPlaylistPath(id string) (string, error) {
+	var err error
+	p := path
+	if p == cwd {
+		p = filepath.Join(path, id)
+	}
+	p, err = filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err = os.Stat(path); os.IsNotExist(err) {
+		err = os.Mkdir(path, os.ModeDir)
+	}
+	return path, err
+}
+
+func downloadPlaylist(id string, getAudio bool) error {
+	var err error
+	var v *youtube.Video
+
+	if err != nil {
+		return err
+	}
+	path, err = varifyPlaylistPath(id)
+	if err != nil {
+		return err
+	}
+
+	plst, err := youtube.NewPlaylist(id)
+	if err != nil {
+		return err
+	}
+	for vID := range plst.VideoIds() {
+		wg.Add(1)
+		v, err = youtube.NewVideo(vID)
+		if err != nil {
+			return err
+		}
+		go func() {
+			if getAudio {
+				err = v.DownloadAudio(filepath.Join(path, v.FileName) + aExt)
+			} else {
+				err = v.Download(filepath.Join(path, v.FileName) + pExt)
+			}
+
+			if err != nil {
+				panic(err)
+			}
+			wg.Done()
+		}()
+	}
+	return nil
 }
 
 func init() {
