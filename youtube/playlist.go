@@ -27,6 +27,7 @@ func getPlaylistData(id string) ([]byte, error) {
 		return nil, errors.New("could not find playlist data")
 	}
 	raw := data[0][1]
+
 	opens, closes := 0, 0 // refering to number of open and closed curly braces
 	for k := range raw {
 		if raw[k] == '{' {
@@ -66,8 +67,7 @@ func NewPlaylist(id string) (*Playlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(data, &p)
-	return &p, err
+	return &p, json.Unmarshal(data, &p)
 }
 
 // VideoIds returns a channel containing all of the video ids in the playlist.
