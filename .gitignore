@@ -1,7 +1,10 @@
 TODO
 
-tests/
 *.json
 *.mp4
 *.mpa
 *.py
+
+# Testing
+coverage.html
+test-coverage

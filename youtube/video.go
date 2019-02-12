@@ -54,11 +54,11 @@ func initVideoData(in []byte, v *Video) error {
 	if err != nil {
 		return err
 	}
-	(*v).baseVideo = vd.VideoDetails.baseVideo
-	(*v).Streams = vd.StreamingData.Formats
+	v.baseVideo = vd.VideoDetails.baseVideo
+	v.Streams = vd.StreamingData.Formats
 	vstream, astream := sortStreams(&vd.StreamingData.AdaptiveFormats)
-	(*v).VideoStreams, (*v).AudioStreams = *vstream, *astream
-	(*v).FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
+	v.VideoStreams, v.AudioStreams = *vstream, *astream
+	v.FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
 	return nil
 }
 

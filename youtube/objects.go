@@ -6,7 +6,7 @@ type baseVideo struct {
 	ChannelID     string `json:"channelId"`
 	LengthSeconds string `json:"lengthSeconds"`
 	Title         string `json:"title"`
-	VideoID       string `json:"videoId"`
+	ID            string `json:"videoId"`
 	ViewCount     string `json:"viewCount"`
 }
 
