@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"regexp"
+	"time"
 )
 
 var (
@@ -21,14 +23,14 @@ func getPlaylistData(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// ioutil.WriteFile(fmt.Sprintf("test_playlist%d", time.Now().Nanosecond()), b, 0644)
+	ioutil.WriteFile(fmt.Sprintf("test_playlist%d", time.Now().Nanosecond()), b, 0644)
 
 	data := plistRendererRegex.FindAllSubmatch(b, 1)
 	if data == nil {
-		return nil, errors.New("got zero length responce")
+		return nil, errors.New("could not find playlist data")
 	}
 	raw := data[0][1]
-	opens, closes := 0, 0
+	opens, closes := 0, 0 // refering to number of open and closed curly braces
 	for k := range raw {
 		if raw[k] == '{' {
 			opens++
@@ -39,7 +41,7 @@ func getPlaylistData(id string) ([]byte, error) {
 			return raw[:k+1], nil
 		}
 	}
-	return nil, nil
+	return nil, errors.New("could not parse responce")
 }
 
 // Playlist represents a youtube playlist.
