@@ -21,6 +21,8 @@ func getPlaylistData(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// ioutil.WriteFile(fmt.Sprintf("test_playlist%d", time.Now().Nanosecond()), b, 0644)
+
 	data := plistRendererRegex.FindAllSubmatch(b, 1)
 	if data == nil {
 		return nil, errors.New("got zero length responce")

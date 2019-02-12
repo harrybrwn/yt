@@ -1,8 +1,8 @@
 package youtube
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -29,8 +29,10 @@ func get(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	return data, err
+
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(resp.Body)
+	return buf.Bytes(), err
 }
 
 func safeFileName(name string) string {

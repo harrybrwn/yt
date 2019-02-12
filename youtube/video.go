@@ -81,16 +81,13 @@ type Video struct {
 
 // NewVideo creates and returns a new Video object.
 func NewVideo(id string) (*Video, error) {
-	var vid Video
+	vid := &Video{}
 	data, err := getRaw(id)
 	if err != nil {
 		return nil, err
 	}
-	err = initVideoData(data, &vid)
-	if err != nil {
-		return nil, err
-	}
-	return &vid, nil
+
+	return vid, initVideoData(data, vid)
 }
 
 // Download will download the video given a file name.
@@ -98,8 +95,8 @@ func NewVideo(id string) (*Video, error) {
 // It is suggested that '.mp4' is used as the extention
 // in the file name but is not manditory.
 func (v *Video) Download(fname string) error {
-	best := GetBestStream(&v.Streams)
-	return DownloadFromStream(best, fname)
+	s := GetBestStream(&v.Streams)
+	return DownloadFromStream(s, fname)
 }
 
 // DownloadAudio will download the video's audio given a file name.
@@ -114,21 +111,6 @@ func (v *Video) DownloadAudio(fname string) error {
 			max = s.Bitrate
 		}
 	}
-	return DownloadFromStream(high, fname)
-}
-
-// DownloadVideo will download the video given a file name.
-//
-// It is suggested that '.mp4' is used as the extention
-// in the file name but is not manditory.
-func (v *Video) DownloadVideo(fname string) error {
-	max := 0
-	var high *Stream
-	for _, s := range v.VideoStreams {
-		if s.Height > max {
-			high = &s
-			max = s.Height
-		}
-	}
+	fmt.Println("starting download")
 	return DownloadFromStream(high, fname)
 }

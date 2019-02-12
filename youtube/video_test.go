@@ -1,6 +1,7 @@
 package youtube
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -17,19 +18,24 @@ func TestNewVideo(t *testing.T) {
 	if v.Author != "Vulf" {
 		t.Error("wrong author")
 	}
+}
 
+func TestDownloads(t *testing.T) {
+	v, err := NewVideo("Nq5LMGtBmis")
+	if err != nil {
+		t.Error(err)
+	}
 	err = v.Download(temp())
 	if err != nil {
 		t.Error(err)
 	}
-	err = v.DownloadAudio(temp())
-	if err != nil {
-		t.Error(err)
-	}
-	// err = v.DownloadVideo(temp())
-	// if err != nil {
-	// 	t.Error(err)
-	// }
+	t.Run("audio download", func(t *testing.T) {
+		err = v.DownloadAudio(temp())
+		if err != nil {
+			t.Error(err)
+		}
+		fmt.Println("ending audio download")
+	})
 }
 
 func TestVideo_Err(t *testing.T) {
