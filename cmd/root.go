@@ -1,4 +1,4 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Harrison Brown harrybrown98@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 var rootCmd = &cobra.Command{
 	Use:          "yt [command]",
-	Short:        "A cli tool for youtube videos",
+	Short:        "A cli tool for downloading youtube videos.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.New("no Arguments\n\nUse \"yt help\" for more information")
