@@ -49,17 +49,17 @@ func varifyPlaylistPath(id string) (string, error) {
 	var err error
 	p := path
 	if p == cwd {
-		p = filepath.Join(path, id)
+		p = filepath.Join(p, id)
 	}
-	p, err = filepath.Abs(path)
+	p, err = filepath.Abs(p)
 	if err != nil {
 		return "", err
 	}
 
-	if _, err = os.Stat(path); os.IsNotExist(err) {
-		err = os.Mkdir(path, os.ModeDir)
+	if _, err = os.Stat(p); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModeDir)
 	}
-	return path, err
+	return p, err
 }
 
 func downloadPlaylist(id string, getAudio bool) error {
