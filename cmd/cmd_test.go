@@ -45,10 +45,10 @@ func TestMakeCommand(t *testing.T) {
 			t.Error("run failed")
 		}
 
-		// c = makeCommand("audio", "test videos", ".mp4")
-		// if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
-		// 	t.Error("run failed")
-		// }
+		c = makeCommand("audio", "test videos", ".mp4")
+		if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
+			t.Error("run failed")
+		}
 	}); err != nil {
 		t.Error(err)
 	}
