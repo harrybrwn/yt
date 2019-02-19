@@ -26,11 +26,8 @@ import (
 )
 
 var (
-	wg sync.WaitGroup
-
-	// flag variabels
-	cfgFile string
-	path    string
+	wg   sync.WaitGroup
+	path string
 
 	cwd, _     = os.Getwd()
 	ytTemplate = `Usage:{{if .Runnable}}
@@ -86,10 +83,14 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 				}
 
 				ext, err := cmd.Flags().GetString("extension")
+				if err != nil {
+					return err
+				}
+				p := filepath.Join(path, v.FileName) + ext
 				if name == "audio" {
-					return v.DownloadAudio(filepath.Join(path, v.FileName) + ext)
+					return v.DownloadAudio(p)
 				} else if name == "video" {
-					return v.Download(filepath.Join(path, v.FileName) + ext)
+					return v.Download(p)
 				}
 				return errors.New("bad command name")
 			})

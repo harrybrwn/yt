@@ -34,8 +34,8 @@ var playlistCmd = &cobra.Command{
 			return err
 		}
 
-		for _, id := range args {
-			err = downloadPlaylist(id, audio)
+		for _, plstID := range args {
+			err = downloadPlaylist(plstID, audio)
 			if err != nil {
 				return err
 			}
@@ -66,9 +66,6 @@ func downloadPlaylist(id string, getAudio bool) error {
 	var err error
 	var v *youtube.Video
 
-	if err != nil {
-		return err
-	}
 	path, err = varifyPlaylistPath(id)
 	if err != nil {
 		return err
