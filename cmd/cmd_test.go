@@ -41,11 +41,23 @@ func TestMakeCommand(t *testing.T) {
 
 	if err := pathToTempFile(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
-		if err := c.RunE(c, []string{"cQ7STILAS0M"}); err != nil {
+		if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
 			t.Error("run failed")
 		}
+
+		// c = makeCommand("audio", "test videos", ".mp4")
+		// if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
+		// 	t.Error("run failed")
+		// }
 	}); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestRootRun(t *testing.T) {
+	err := rootCmd.RunE(rootCmd, []string{})
+	if err == nil {
+		t.Error("expected error")
 	}
 }
 
