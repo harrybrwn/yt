@@ -111,6 +111,5 @@ func (v *Video) DownloadAudio(fname string) error {
 			max = s.Bitrate
 		}
 	}
-	fmt.Println("starting download")
 	return DownloadFromStream(high, fname)
 }
