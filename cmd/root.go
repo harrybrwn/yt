@@ -31,7 +31,6 @@ var (
 	// flag variabels
 	cfgFile string
 	path    string
-	timed   bool // hidden flag var
 
 	cwd, _     = os.Getwd()
 	ytTemplate = `Usage:{{if .Runnable}}
@@ -64,8 +63,12 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
+	videoCmd := makeCommand("video", "youtube videos", ".mp4")
+	audioCmd := makeCommand("audio", "audio from youtube videos", ".mpa")
+	rootCmd.AddCommand(videoCmd)
+	rootCmd.AddCommand(audioCmd)
 
+	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
 	rootCmd.SetUsageTemplate(ytTemplate)
 }
 
@@ -81,10 +84,12 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 				if err != nil {
 					return err
 				}
+
+				ext, err := cmd.Flags().GetString("extension")
 				if name == "audio" {
-					return v.DownloadAudio(filepath.Join(path, v.FileName) + aExt)
+					return v.DownloadAudio(filepath.Join(path, v.FileName) + ext)
 				} else if name == "video" {
-					return v.Download(filepath.Join(path, v.FileName) + vExt)
+					return v.Download(filepath.Join(path, v.FileName) + ext)
 				}
 				return errors.New("bad command name")
 			})

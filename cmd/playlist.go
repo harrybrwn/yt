@@ -86,7 +86,7 @@ func downloadPlaylist(id string, getAudio bool) error {
 		}
 		go func() {
 			if getAudio {
-				err = v.DownloadAudio(filepath.Join(path, v.FileName) + aExt)
+				err = v.DownloadAudio(filepath.Join(path, v.FileName) + ".mpa")
 			} else {
 				err = v.Download(filepath.Join(path, v.FileName) + pExt)
 			}
