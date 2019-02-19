@@ -8,27 +8,19 @@ import (
 )
 
 func TestVarifyPlaylistPath(t *testing.T) {
-	tempPath := path
+	err := pathToTempFile(t, func(t *testing.T) {
+		p, err := varifyPlaylistPath("some_id")
 
-	dir, err := ioutil.TempDir("", "yt_tests")
+		if err != nil {
+			t.Error(err)
+		}
+		if _, err = os.Stat(p); os.IsNotExist(err) {
+			t.Error("path should exits")
+		}
+	})
 	if err != nil {
 		t.Error(err)
 	}
-	defer os.RemoveAll(dir)
-	path = dir
-	cwd = dir
-	p, err := varifyPlaylistPath("some_id")
-	if err != nil {
-		t.Error(err)
-	}
-	if _, err = os.Stat(p); os.IsNotExist(err) {
-		t.Error("path should exits")
-	}
-	cwd, err = os.Getwd()
-	if err != nil {
-		t.Error(err)
-	}
-	path = tempPath
 }
 
 func TestMakeCommand(t *testing.T) {
@@ -46,6 +38,7 @@ func TestMakeCommand(t *testing.T) {
 	if err := c.RunE(c, []string{"cQ7STILAS0M"}); err == nil {
 		t.Error("expected error")
 	}
+
 	if err := pathToTempFile(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
 		if err := c.RunE(c, []string{"cQ7STILAS0M"}); err != nil {
@@ -65,7 +58,13 @@ func pathToTempFile(t *testing.T, fn func(t *testing.T)) error {
 	defer os.RemoveAll(dir)
 	path = dir
 	cwd = dir
+
 	fn(t)
+
+	cwd, err = os.Getwd()
+	if err != nil {
+		t.Error(err)
+	}
 	path = tempPath
 	return nil
 }
