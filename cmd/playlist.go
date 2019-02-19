@@ -57,9 +57,12 @@ func varifyPlaylistPath(id string) (string, error) {
 	}
 
 	if _, err = os.Stat(p); os.IsNotExist(err) {
-		os.Mkdir(path, os.ModeDir)
+		err = os.Mkdir(p, os.ModeDir)
+		if err != nil {
+			return "", err
+		}
 	}
-	return p, err
+	return p, nil
 }
 
 func downloadPlaylist(id string, getAudio bool) error {
