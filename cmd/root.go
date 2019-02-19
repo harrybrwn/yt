@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"yt/youtube"
 
@@ -65,6 +67,31 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
 
 	rootCmd.SetUsageTemplate(ytTemplate)
+}
+
+func makeCommand(name, short, defaultExt string) *cobra.Command {
+	c := &cobra.Command{
+		Use:   fmt.Sprintf("%s [ids...]", name),
+		Short: fmt.Sprintf("A tool for downloading %s", short),
+		Long:  fmt.Sprintf(`To download multiple videos use 'yt %s <id> <id>...'`, name),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handleVideos(args, func(v *youtube.Video) error {
+				var err error
+				path, err = filepath.Abs(path)
+				if err != nil {
+					return err
+				}
+				if name == "audio" {
+					return v.DownloadAudio(filepath.Join(path, v.FileName) + aExt)
+				} else if name == "video" {
+					return v.Download(filepath.Join(path, v.FileName) + vExt)
+				}
+				return errors.New("bad command name")
+			})
+		},
+	}
+	c.Flags().StringP("extension", "e", defaultExt, "file extension used for video download")
+	return c
 }
 
 func handleVideos(ids []string, fn func(*youtube.Video) error) error {
