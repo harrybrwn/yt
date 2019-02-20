@@ -8,7 +8,7 @@ import (
 )
 
 func TestVarifyPlaylistPath(t *testing.T) {
-	err := pathToTempFile(t, func(t *testing.T) {
+	err := redirectPath(t, func(t *testing.T) {
 		p, err := varifyPlaylistPath("some_id")
 
 		if err != nil {
@@ -39,7 +39,7 @@ func TestMakeCommand(t *testing.T) {
 		t.Error("expected error")
 	}
 
-	if err := pathToTempFile(t, func(t *testing.T) {
+	if err := redirectPath(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
 		if err := c.RunE(c, []string{"I9JXjzKVKtA", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed")
@@ -55,7 +55,7 @@ func TestMakeCommand(t *testing.T) {
 }
 
 func TestDownloadPlaylist(t *testing.T) {
-	if err := pathToTempFile(t, func(t *testing.T) {
+	if err := redirectPath(t, func(t *testing.T) {
 		err := playlistCmd.RunE(playlistCmd, []string{"PLo7FOXNe7Yt9U0Qh1KBDjHQUuQ5BQR9Jt"})
 		if err != nil {
 			t.Error(err)
@@ -63,6 +63,36 @@ func TestDownloadPlaylist(t *testing.T) {
 	}); err != nil {
 		t.Error(err)
 	}
+}
+
+func redirectPath(t *testing.T, fn func(t *testing.T)) error {
+	var err error
+	pathCopy := path
+	testDIR := filepath.Join(path, "TESTS")
+	path = testDIR
+	cwd = testDIR
+	t.Log(path)
+
+	if _, err = os.Stat(path); os.IsNotExist(err) {
+		err = os.Mkdir(path, os.ModeDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	fn(t)
+
+	err = os.RemoveAll(testDIR)
+	if err != nil {
+		return err
+	}
+
+	cwd, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+	path = pathCopy
+	return nil
 }
 
 func TestRootRun(t *testing.T) {
