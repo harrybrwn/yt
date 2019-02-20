@@ -1,16 +1,26 @@
 COVER_FILE=test-coverage
 COVER=go tool cover
 
+PKGS=./cmd ./youtube
+GOTEST=go test -v -cover
 
-all: test build clean
 
-build:
+all: build clean
+
+build: test
 	go install yt
 
 test:
-	go test -v ./... -coverprofile=$(COVER_FILE)
-	$(COVER) -func=$(COVER_FILE)
-	$(COVER) -html=$(COVER_FILE) -o coverage.html
+	@for pkg in $(PKGS); do \
+		$(GOTEST) $$pkg -c; \
+	done
+
+	@for pkg in $(PKGS); do \
+		./"$$pkg".test; \
+	done
 
 clean:
-	rm $(COVER_FILE)
+	# rm $(COVER_FILE)
+	@for pkg in $(PKGS); do \
+		rm "$$pkg".test; \
+	done
