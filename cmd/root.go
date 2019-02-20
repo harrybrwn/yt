@@ -29,17 +29,19 @@ var (
 	wg   sync.WaitGroup
 	path string
 
-	cwd, _     = os.Getwd()
+	cwd, _ = os.Getwd()
+
 	ytTemplate = `Usage:{{if .Runnable}}
 {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
-	
+
 Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
 
 Flags:
 {{.Flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableFlags}}
-	
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}`
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
 )
 
 var rootCmd = &cobra.Command{

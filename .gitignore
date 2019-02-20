@@ -9,3 +9,5 @@ TODO
 # Testing
 coverage.html
 test-coverage
+*.test
+*.test.exe

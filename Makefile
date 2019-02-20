@@ -1,18 +1,18 @@
-COVER_FILE=test-coverage
-COVER=go tool cover
+PKGS=./cmd \
+     ./youtube
 
-PKGS=./cmd ./youtube
 GOTEST=go test -v -cover
 
 
 all: build clean
 
 build: test
-	go install yt
+	go install github.com/harrybrwn/yt
 
 test:
 	@for pkg in $(PKGS); do \
 		$(GOTEST) $$pkg -c; \
+		chmod +xw "$$pkg".test; \
 	done
 
 	@for pkg in $(PKGS); do \
@@ -20,7 +20,6 @@ test:
 	done
 
 clean:
-	# rm $(COVER_FILE)
 	@for pkg in $(PKGS); do \
 		rm "$$pkg".test; \
 	done

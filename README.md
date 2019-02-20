@@ -7,5 +7,5 @@ A cli for downloading youtube videos
 
 ### Installation
 ```
-go install -u github.com/harrybrwn/yt
+go install github.com/harrybrwn/yt
 ```
