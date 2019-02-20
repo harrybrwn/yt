@@ -35,18 +35,18 @@ func TestMakeCommand(t *testing.T) {
 	if ext != ".txt" {
 		t.Error("wrong default extention")
 	}
-	if err := c.RunE(c, []string{"cQ7STILAS0M"}); err == nil {
+	if err := c.RunE(c, []string{"I9JXjzKVKtA"}); err == nil {
 		t.Error("expected error")
 	}
 
 	if err := pathToTempFile(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
-		if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
+		if err := c.RunE(c, []string{"I9JXjzKVKtA", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed")
 		}
 
 		c = makeCommand("audio", "test videos", ".mp4")
-		if err := c.RunE(c, []string{"cQ7STILAS0M", "6ONRf7h3Mdk"}); err != nil {
+		if err := c.RunE(c, []string{"I9JXjzKVKtA", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed")
 		}
 	}); err != nil {
