@@ -21,7 +21,7 @@ func TestNewVideo(t *testing.T) {
 }
 
 func TestDownloads(t *testing.T) {
-	v, err := NewVideo("Nq5LMGtBmis")
+	v, err := NewVideo("O9Ks3_8Nq1s")
 	if err != nil {
 		t.Error(err)
 	}

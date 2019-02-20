@@ -54,6 +54,17 @@ func TestMakeCommand(t *testing.T) {
 	}
 }
 
+func TestDownloadPlaylist(t *testing.T) {
+	if err := pathToTempFile(t, func(t *testing.T) {
+		err := playlistCmd.RunE(playlistCmd, []string{"PLo7FOXNe7Yt9U0Qh1KBDjHQUuQ5BQR9Jt"})
+		if err != nil {
+			t.Error(err)
+		}
+	}); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestRootRun(t *testing.T) {
 	err := rootCmd.RunE(rootCmd, []string{})
 	if err == nil {
