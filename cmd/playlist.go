@@ -17,8 +17,8 @@ package cmd
 import (
 	"os"
 	"path/filepath"
-	"yt/youtube"
 
+	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
 )
 

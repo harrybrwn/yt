@@ -20,8 +20,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"yt/youtube"
 
+	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
 )
 
