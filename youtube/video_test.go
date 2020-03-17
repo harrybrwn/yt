@@ -18,6 +18,18 @@ func TestNewVideo(t *testing.T) {
 	if v.Author != "Vulf" {
 		t.Error("wrong author")
 	}
+	if len(v.Streams) == 0 {
+		t.Error("no streams")
+	}
+	if len(v.VideoStreams) == 0 {
+		t.Error("no video steams")
+	}
+	if len(v.AudioStreams) == 0 {
+		t.Error("no audio streams")
+	}
+	if v.ChannelID == "" {
+		t.Error("should have non empty channel id")
+	}
 }
 
 func TestDownloads(t *testing.T) {
@@ -50,11 +62,40 @@ func TestVideo_Err(t *testing.T) {
 	}
 }
 
+func printJSON(m map[string]interface{}) {
+	for key := range m {
+		switch m[key].(type) {
+		case map[string]interface{}:
+			printJSON(m[key].(map[string]interface{}))
+		default:
+			fmt.Println(key, ": ", m[key])
+		}
+	}
+}
+
+// func testInitVideo(t *testing.T) {
+// 	id := "Nq5LMGtBmis"
+// 	b, _ := get(videoURL(id))
+// 	ioutil.WriteFile("testingdata.json", partialConfigREGEX.FindAllSubmatch(b, 1)[0][1], 777)
+// 	// vd := VideoData{}
+// 	vd := map[string]interface{}{}
+
+// 	data, err := getRaw(id)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+// 	if err := json.Unmarshal(data, &vd); err != nil {
+// 		t.Error(err)
+// 	}
+// 	printJSON(vd)
+// }
+
 func TestGetRaw(t *testing.T) {
-	b, err := getRaw("ferZnZ0_rSM")
+	b, err := getRaw("3eN7LKFCI8c")
 	if err != nil {
 		t.Error(err)
 	}
+	ioutil.WriteFile("testingdata.json", b, 777)
 	if b == nil {
 		t.Error("got empty byte array")
 	}

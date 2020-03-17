@@ -17,6 +17,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"fmt"
 
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
@@ -92,7 +93,7 @@ func downloadPlaylist(id string, getAudio bool) error {
 			}
 
 			if err != nil {
-				panic(err)
+				fmt.Println("Error:", err)
 			}
 			wg.Done()
 		}()

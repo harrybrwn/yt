@@ -14,7 +14,8 @@ type Stream struct {
 	MimeType string `json:"mimeType"`
 
 	// The url for the raw video data
-	URL string `json:"url"`
+	URL string `json:"probeUrl"`
+	// URL string `json:"url"`
 
 	// Height of the video in pixels.
 	// If Height is equeal to zero, it is an audio-only stream.

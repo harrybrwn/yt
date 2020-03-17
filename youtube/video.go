@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 )
 
@@ -32,7 +34,8 @@ func getRaw(id string) ([]byte, error) {
 	rawb := bytes.Replace(
 		bytes.Replace(
 			bytes.Replace(
-				partialConfigREGEX.FindAllSubmatch(b, 1)[0][1],
+				// partialConfigREGEX.FindAllSubmatch(b, 1)[0][1],
+				fullConfigREGEX.FindAllSubmatch(b, 1)[0][1],
 				[]byte("\\\\"),
 				[]byte(`ESCAPE`),
 				-1,
@@ -82,10 +85,17 @@ type Video struct {
 // NewVideo creates and returns a new Video object.
 func NewVideo(id string) (*Video, error) {
 	vid := &Video{}
-	data, err := getRaw(id)
+	// data, err := getRaw(id)
+	info, err := info(id)
 	if err != nil {
 		return nil, err
 	}
+	vals, err := url.ParseQuery(info.String())
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println(len(vals["player_response"]))
+	data := []byte(vals["player_response"][0])
 
 	return vid, initVideoData(data, vid)
 }
@@ -103,8 +113,14 @@ func (v *Video) Download(fname string) error {
 //
 // The suggested file extention is '.mpa'
 func (v *Video) DownloadAudio(fname string) error {
-	max := 0
-	var high *Stream
+	var (
+		max  = 0
+		high *Stream
+	)
+
+	if len(v.AudioStreams) == 0 {
+		return errors.New("no audio streams")
+	}
 	for _, s := range v.AudioStreams {
 		if s.Bitrate > max {
 			high = &s
@@ -112,4 +128,33 @@ func (v *Video) DownloadAudio(fname string) error {
 		}
 	}
 	return DownloadFromStream(high, fname)
+}
+
+func info(id string) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	req := &http.Request{
+		Method:     "GET",
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+		Host:       "www.youtube.com",
+		URL: &url.URL{
+			Scheme:   "https",
+			Host:     "www.youtube.com",
+			Path:     "/get_video_info",
+			RawQuery: url.Values{"video_id": {id}}.Encode(),
+		},
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("do error", err)
+		return nil, err
+	}
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return &buf, nil
 }

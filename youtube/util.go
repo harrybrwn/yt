@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	// Logging is a variable serves as a toggle for builtin logging
 	client = &http.Client{}
 )
 
