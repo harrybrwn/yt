@@ -70,11 +70,11 @@ func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 	var err error
 	pathCopy := path
 
-	testDIR := filepath.Join(
+	baseTestPath := filepath.Join(
 		os.TempDir(),
 		fmt.Sprintf("yt_cmd_tests%d", time.Now().UnixNano()),
-		"TESTS",
 	)
+	testDIR := filepath.Join(baseTestPath, "TESTS")
 	path = testDIR
 	cwd = testDIR
 	t.Log(path)
@@ -89,6 +89,10 @@ func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 	fn(t)
 
 	err = os.RemoveAll(testDIR)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(baseTestPath)
 	if err != nil {
 		return err
 	}

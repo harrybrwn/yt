@@ -45,16 +45,24 @@ func TestDownloads(t *testing.T) {
 	if v == nil {
 		t.Fatal("video should not be nil")
 	}
-	err = v.Download(temp())
+	file := temp() + "_" + v.FileName
+	err = v.Download(file)
 	if err != nil {
 		t.Error(err)
 	}
+	if err = os.Remove(file); err != nil {
+		t.Error(err)
+	}
+	file = temp() + "_" + v.FileName
 	t.Run("audio download", func(t *testing.T) {
-		err = v.DownloadAudio(temp())
+		err = v.DownloadAudio(file)
 		if err != nil {
 			t.Error(err)
 		}
 	})
+	if err = os.Remove(file); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVideo_Err(t *testing.T) {
