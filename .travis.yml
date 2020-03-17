@@ -10,7 +10,8 @@ os:
   - windows
 
 script:
-  - make clean test
+  - go clean -testcache
+  - go test -v -cover ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
