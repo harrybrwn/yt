@@ -59,7 +59,7 @@ func varifyPlaylistPath(id string) (string, error) {
 	}
 
 	if _, err = os.Stat(p); os.IsNotExist(err) {
-		err = os.Mkdir(p, os.ModeDir)
+		err = os.Mkdir(p, 0755)
 		if err != nil {
 			return "", err
 		}

@@ -27,7 +27,7 @@ import (
 
 var (
 	wg   sync.WaitGroup
-	path string
+	path string // TODO: fix this!!!
 
 	cwd, _ = os.Getwd()
 

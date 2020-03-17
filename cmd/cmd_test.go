@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestVarifyPlaylistPath(t *testing.T) {
@@ -35,18 +36,18 @@ func TestMakeCommand(t *testing.T) {
 	if ext != ".txt" {
 		t.Error("wrong default extention")
 	}
-	if err := c.RunE(c, []string{"I9JXjzKVKtA"}); err == nil {
+	if err := c.RunE(c, []string{"fR2xOh8CqMM"}); err == nil {
 		t.Error("expected error")
 	}
 
 	if err := redirectPath(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
-		if err := c.RunE(c, []string{"I9JXjzKVKtA", "O9Ks3_8Nq1s"}); err != nil {
+		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed")
 		}
 
-		c = makeCommand("audio", "test videos", ".mp4")
-		if err := c.RunE(c, []string{"I9JXjzKVKtA", "O9Ks3_8Nq1s"}); err != nil {
+		c = makeCommand("audio", "test videos", ".mpa")
+		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed")
 		}
 	}); err != nil {
@@ -68,13 +69,18 @@ func TestDownloadPlaylist(t *testing.T) {
 func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 	var err error
 	pathCopy := path
-	testDIR := filepath.Join(path, "TESTS")
+
+	testDIR := filepath.Join(
+		os.TempDir(),
+		fmt.Sprintf("yt_cmd_tests%d", time.Now().UnixNano()),
+		"TESTS",
+	)
 	path = testDIR
 	cwd = testDIR
 	t.Log(path)
 
 	if _, err = os.Stat(path); os.IsNotExist(err) {
-		err = os.Mkdir(path, 0755)
+		err = os.MkdirAll(path, 0755)
 		if err != nil {
 			return err
 		}
@@ -100,43 +106,4 @@ func TestRootRun(t *testing.T) {
 	if err == nil {
 		t.Error("expected error")
 	}
-}
-
-func pathToTempFile(t *testing.T, fn func(t *testing.T)) error {
-	tempPath := path
-	dir, err := ioutil.TempDir("", "yt_tests")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(dir)
-	path = dir
-	cwd = dir
-
-	fn(t)
-
-	cwd, err = os.Getwd()
-	if err != nil {
-		t.Error(err)
-	}
-	path = tempPath
-	return nil
-}
-
-func tempfile() string {
-	f, err := ioutil.TempFile("", "yt")
-	if err != nil {
-		panic(err)
-	}
-	if err := f.Close(); err != nil {
-		panic(err)
-	}
-	if err := os.Remove(f.Name()); err != nil {
-		panic(err)
-	}
-	dir, err := ioutil.TempDir("", "yt")
-	if err != nil {
-		panic(err)
-	}
-	defer os.RemoveAll(dir)
-	return filepath.Join(dir, filepath.Base(f.Name()))
 }
