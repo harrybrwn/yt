@@ -29,7 +29,7 @@ func getPlaylistData(id string) ([]byte, error) {
 	}
 	raw := data[0][1]
 
-	opens, closes := 0, 0 // refering to number of open and closed curly braces
+	opens, closes := 0, 0 // referring to number of open and closed curly braces
 	for k := range raw {
 		if raw[k] == '{' {
 			opens++
@@ -40,7 +40,7 @@ func getPlaylistData(id string) ([]byte, error) {
 			return raw[:k+1], nil
 		}
 	}
-	return nil, errors.New("could not parse responce")
+	return nil, errors.New("could not parse response")
 }
 
 // Playlist represents a youtube playlist.

@@ -34,7 +34,7 @@ func TestMakeCommand(t *testing.T) {
 		t.Error(err)
 	}
 	if ext != ".txt" {
-		t.Error("wrong default extention")
+		t.Error("wrong default extension")
 	}
 	if err := c.RunE(c, []string{"fR2xOh8CqMM"}); err == nil {
 		t.Error("expected error")

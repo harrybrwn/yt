@@ -74,7 +74,7 @@ func NewVideo(id string) (*Video, error) {
 
 // Download will download the video given a file name.
 //
-// It is suggested that '.mp4' is used as the extention
+// It is suggested that '.mp4' is used as the extension
 // in the file name but is not manditory.
 func (v *Video) Download(fname string) error {
 	s := GetBestStream(&v.Streams)
@@ -83,7 +83,7 @@ func (v *Video) Download(fname string) error {
 
 // DownloadAudio will download the video's audio given a file name.
 //
-// The suggested file extention is '.mpa'
+// The suggested file extension is '.mpa'
 func (v *Video) DownloadAudio(fname string) error {
 	var (
 		max  = 0
