@@ -1,4 +1,16 @@
 language: go
 
-before_install:
-  - go get github.com/spf13/cobra
+go:
+  - 1.13
+  - 1.14
+
+os:
+  - linux
+  - osx
+  - windows
+
+script:
+  - make clean test
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
