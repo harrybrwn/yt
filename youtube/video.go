@@ -21,36 +21,6 @@ var (
 	partialConfigREGEX = regexp.MustCompile(`"player_response":"{(.*)}"`)
 )
 
-// getRaw is the function that retrieves the data from a youtube video
-// and returns it as a channel containing a raw byte slice.
-func getRaw(id string) ([]byte, error) {
-	b, err := get(videoURL(id))
-	if err != nil {
-		return nil, err
-	}
-	if !partialConfigREGEX.Match(b) {
-		return nil, errors.New("couldn't find data")
-	}
-	rawb := bytes.Replace(
-		bytes.Replace(
-			bytes.Replace(
-				// partialConfigREGEX.FindAllSubmatch(b, 1)[0][1],
-				fullConfigREGEX.FindAllSubmatch(b, 1)[0][1],
-				[]byte("\\\\"),
-				[]byte(`ESCAPE`),
-				-1,
-			),
-			[]byte("\\"),
-			[]byte(""),
-			-1,
-		),
-		[]byte(`ESCAPE`),
-		[]byte("\\"),
-		-1,
-	)
-	return append([]byte("{"), append(rawb, "}"...)...), nil
-}
-
 func initVideoData(in []byte, v *Video) error {
 	vd := VideoData{}
 	err := json.Unmarshal(in, &vd)
