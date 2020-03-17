@@ -32,20 +32,29 @@ var (
 	cwd, _ = os.Getwd()
 
 	ytTemplate = `Usage:{{if .Runnable}}
-{{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{range $i, $alias := .Aliases}}
+	{{- if $i}}, {{end -}}{{$alias}}
+  {{- end}}{{end}}{{if .HasAvailableSubCommands}}
 
 Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+{{- end}}{{if .HasAvailableLocalFlags}}
 
 Flags:
-{{.Flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableFlags}}
+{{.Flags.FlagUsages | trimTrailingWhitespaces}}
+{{- end -}}
+{{if .HasAvailableFlags}}
 
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+Use "{{.CommandPath}} [command] --help" for more information about a command.
+{{- end}}
 `
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "yt [command]",
+	Use:          "yt <command>",
 	Short:        "A cli tool for downloading youtube videos.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,6 +72,7 @@ func Execute() {
 
 func init() {
 	videoCmd := makeCommand("video", "youtube videos", ".mp4")
+	videoCmd.Aliases = append(videoCmd.Aliases, "vid")
 	audioCmd := makeCommand("audio", "audio from youtube videos", ".mpa")
 	rootCmd.AddCommand(videoCmd)
 	rootCmd.AddCommand(audioCmd)
@@ -73,9 +83,10 @@ func init() {
 
 func makeCommand(name, short, defaultExt string) *cobra.Command {
 	c := &cobra.Command{
-		Use:   fmt.Sprintf("%s [ids...]", name),
-		Short: fmt.Sprintf("A tool for downloading %s", short),
-		Long:  fmt.Sprintf(`To download multiple videos use 'yt %s <id> <id>...'`, name),
+		Use:     fmt.Sprintf("%s [ids...]", name),
+		Short:   fmt.Sprintf("A tool for downloading %s", short),
+		Long:    fmt.Sprintf(`To download multiple videos use 'yt %s <id> <id>...'`, name),
+		Aliases: []string{name[:1], name[:2]},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return handleVideos(args, func(v *youtube.Video) error {
 				var err error

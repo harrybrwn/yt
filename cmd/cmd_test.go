@@ -74,7 +74,7 @@ func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 	t.Log(path)
 
 	if _, err = os.Stat(path); os.IsNotExist(err) {
-		err = os.Mkdir(path, os.ModeDir)
+		err = os.Mkdir(path, 0755)
 		if err != nil {
 			return err
 		}

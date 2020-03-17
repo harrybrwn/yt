@@ -15,9 +15,9 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"fmt"
 
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
@@ -26,8 +26,9 @@ import (
 var pExt string
 
 var playlistCmd = &cobra.Command{
-	Use:   "playlist [ids...]",
-	Short: "A tool for downloading youtube playlists.",
+	Use:     "playlist [ids...]",
+	Short:   "A tool for downloading youtube playlists.",
+	Aliases: []string{"p", "plst"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		audio, err := cmd.Flags().GetBool("audio")
