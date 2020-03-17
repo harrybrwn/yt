@@ -1,6 +1,7 @@
 package youtube
 
 import (
+	"errors"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -14,8 +15,7 @@ type Stream struct {
 	MimeType string `json:"mimeType"`
 
 	// The url for the raw video data
-	URL string `json:"probeUrl"`
-	// URL string `json:"url"`
+	URL string `json:"url"`
 
 	// Height of the video in pixels.
 	// If Height is equeal to zero, it is an audio-only stream.
@@ -73,6 +73,9 @@ func GetBestStream(c *[]Stream) *Stream {
 
 // DownloadFromStream accepts a stream and downloads it to a given file name.
 func DownloadFromStream(s *Stream, fname string) error {
+	if len(s.URL) == 0 {
+		return errors.New("could not find stream url")
+	}
 	b, err := get(s.URL)
 	if err != nil {
 		return err

@@ -30,12 +30,20 @@ func TestNewVideo(t *testing.T) {
 	if v.ChannelID == "" {
 		t.Error("should have non empty channel id")
 	}
+	for _, s := range v.Streams {
+		if s.URL == "" {
+			t.Error("stream has empty URL")
+		}
+	}
 }
 
 func TestDownloads(t *testing.T) {
 	v, err := NewVideo("O9Ks3_8Nq1s")
 	if err != nil {
 		t.Error(err)
+	}
+	if v == nil {
+		t.Fatal("video should not be nil")
 	}
 	err = v.Download(temp())
 	if err != nil {
@@ -46,7 +54,6 @@ func TestDownloads(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		fmt.Println("ending audio download")
 	})
 }
 
@@ -95,10 +102,10 @@ func TestGetRaw(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	ioutil.WriteFile("testingdata.json", b, 777)
 	if b == nil {
 		t.Error("got empty byte array")
 	}
+	// ioutil.WriteFile("testingdata.json", b, 777)
 }
 
 func temp() string {

@@ -85,7 +85,6 @@ type Video struct {
 // NewVideo creates and returns a new Video object.
 func NewVideo(id string) (*Video, error) {
 	vid := &Video{}
-	// data, err := getRaw(id)
 	info, err := info(id)
 	if err != nil {
 		return nil, err
@@ -94,10 +93,13 @@ func NewVideo(id string) (*Video, error) {
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println(len(vals["player_response"]))
-	data := []byte(vals["player_response"][0])
 
-	return vid, initVideoData(data, vid)
+	pResp, ok := vals["player_response"]
+	if !ok || len(pResp) < 1 {
+		return nil, errors.New("could not find video player data")
+	}
+
+	return vid, initVideoData([]byte(pResp[0]), vid)
 }
 
 // Download will download the video given a file name.
@@ -149,7 +151,6 @@ func info(id string) (*bytes.Buffer, error) {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("do error", err)
 		return nil, err
 	}
 	_, err = buf.ReadFrom(resp.Body)
