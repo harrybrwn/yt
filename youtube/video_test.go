@@ -88,34 +88,6 @@ func printJSON(m map[string]interface{}) {
 	}
 }
 
-// func testInitVideo(t *testing.T) {
-// 	id := "Nq5LMGtBmis"
-// 	b, _ := get(videoURL(id))
-// 	ioutil.WriteFile("testingdata.json", partialConfigREGEX.FindAllSubmatch(b, 1)[0][1], 777)
-// 	// vd := VideoData{}
-// 	vd := map[string]interface{}{}
-
-// 	data, err := getRaw(id)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if err := json.Unmarshal(data, &vd); err != nil {
-// 		t.Error(err)
-// 	}
-// 	printJSON(vd)
-// }
-
-func TestGetRaw(t *testing.T) {
-	b, err := getRaw("3eN7LKFCI8c")
-	if err != nil {
-		t.Error(err)
-	}
-	if b == nil {
-		t.Error("got empty byte array")
-	}
-	// ioutil.WriteFile("testingdata.json", b, 777)
-}
-
 func temp() string {
 	f, err := ioutil.TempFile("", "yt")
 	if err != nil {
