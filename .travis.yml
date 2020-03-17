@@ -15,3 +15,7 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+env:
+  global:
+    secure: cWwoRPxXV5FbY/4JCl5Wl/NvoR0g8KSEuw499yE3LOrUZdzLjC0ZrZf/FZE0NyrQutHM0wcTiB5Dr7w7POaWy6/iBMnOrfWxZIE/t4XOfI4kpQGWOV22qn0KgGEElQVjLoUXwUuPt1qEtVNFP2ovj30ZRqgr+/6W31zU/brDYTRq/tFNnYp8VqTCUYjGCk8dAz55w+guF0ITZrjvUJqfu3wLmZzmvWdS2TyZ7QSQuChe+q7rXTQAjOucdeR3i06mIAWYkutv0wxbMP06HZmzzwYuC7B9BgXHVK5ddrY1jJtI7V5xt+pWlc63ZEPAGlAKW8rRfFhHKencgho1h35rzC/kHgOVAeZwQzwEdpE7vb+keB2sAOryH0n79pcF98SetzTEbQykvlplXhgg+vo/nuLsHsDZL0NQsovoQ5ZtW4xiYa01TeW0inoB/TdSY4MyKqhjp/ENC8NihDnjG6NX2UgKEH12WC/MVCkBo56anroJnLOuuj9yG2UYefocNHbqar4f1/Q0O5YSjU41g/Y8n7C0W/hVSRJ+nOCRhjz3WInftqW3SR7xI+UGeqK+6AR7rCpdib1rBMvYtUEVZNYYROmWI+cYxz0/IkVlHlJXYxU0QNYrVb2maXARjrozXWmWXmnKlHV8wWdMYO3HYRR1Yc08KnI19G+Qr9fQo+z4JcA=
