@@ -8,6 +8,12 @@ TODO
 
 # Testing
 coverage.html
+coverage.txt
 test-coverage
 *.test
 *.test.exe
+
+# Build
+yt
+*.a
+*.o

@@ -2,15 +2,21 @@ GO=go
 GOTEST=go test -v -cover
 INSTALL=go install
 
-all: build clean
+all: clean test
 
-build:
+install:
 	$(INSTALL) github.com/harrybrwn/yt
 
 test:
-	$(GOTEST) ./...
+	go test -v ./... -coverprofile=coverage.txt -covermode=atomic
 
 clean:
-	$(GO) clean -testcache
+	go clean -testcache
+	go clean -i
+	$(RM) coverage.txt *.a
+
+build:
+	go build -o youtube.a ./youtube
+	go build -o cmd.a ./cmd
 
 .PHONEY: all build test clean

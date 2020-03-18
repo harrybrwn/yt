@@ -77,7 +77,6 @@ func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 	testDIR := filepath.Join(baseTestPath, "TESTS")
 	path = testDIR
 	cwd = testDIR
-	t.Log(path)
 
 	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)

@@ -10,7 +10,11 @@ import (
 func TestNewVideo(t *testing.T) {
 	v, err := NewVideo("Nq5LMGtBmis")
 	if err != nil {
-		t.Error(err)
+		fmt.Printf("%T\n", err)
+		t.Fatal(err)
+	}
+	if v == nil {
+		t.Fatal("got nil video")
 	}
 	if v.ID != "Nq5LMGtBmis" {
 		t.Error("wrong id")
@@ -70,11 +74,38 @@ func TestVideo_Err(t *testing.T) {
 	if err == nil {
 		t.Error("expected error")
 	}
+	fmt.Println(err)
 
 	err = initVideoData([]byte(""), &Video{})
 	if err == nil {
 		t.Error("expected error")
 	}
+}
+
+func TestInfo(t *testing.T) {
+	r, err := info("O9Ks3_8Nq1s")
+	if err != nil {
+		t.Error(err)
+	}
+	defer r.cleanup()
+
+	m := make(map[string][][]byte)
+	err = parseQuery(r, m)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(m) == 0 {
+		t.Error("should not have zero length")
+	}
+
+	// if len(buf.Bytes()) == 0 {
+	// 	t.Error("zero length response")
+	// }
+	// buf, err = info("")
+	// v, _ := url.ParseQuery(buf.String())
+	// if len(v["errorcode"]) == 0 {
+	// 	t.Error("exected this to fail")
+	// }
 }
 
 func printJSON(m map[string]interface{}) {

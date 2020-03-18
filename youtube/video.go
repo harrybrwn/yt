@@ -1,7 +1,7 @@
 package youtube
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,21 +55,28 @@ type Video struct {
 // NewVideo creates and returns a new Video object.
 func NewVideo(id string) (*Video, error) {
 	vid := &Video{}
-	info, err := info(id)
+	r, err := info(id)
 	if err != nil {
 		return nil, err
 	}
-	vals, err := url.ParseQuery(info.String())
-	if err != nil {
+	defer r.cleanup()
+
+	query := make(map[string][][]byte)
+
+	if err = parseQuery(r, query); err != nil {
+		fmt.Println("parseQuery error")
 		return nil, err
+	}
+	if errcode := query["errorcode"]; len(errcode) != 0 {
+		return nil, fmt.Errorf("youtube.NewVideo: %s", errcode[0])
 	}
 
-	pResp, ok := vals["player_response"]
+	pResp, ok := query["player_response"]
 	if !ok || len(pResp) < 1 {
 		return nil, errors.New("could not find video player data")
 	}
 
-	return vid, initVideoData([]byte(pResp[0]), vid)
+	return vid, initVideoData(pResp[0], vid)
 }
 
 // Download will download the video given a file name.
@@ -102,9 +109,12 @@ func (v *Video) DownloadAudio(fname string) error {
 	return DownloadFromStream(high, fname)
 }
 
-func info(id string) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
+type inforeader struct {
+	*bufio.Reader
+	cleanup func() error
+}
 
+func info(id string) (*inforeader, error) {
 	req := &http.Request{
 		Method:     "GET",
 		Proto:      "HTTP/1.1",
@@ -123,9 +133,12 @@ func info(id string) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return &buf, nil
+
+	return &inforeader{
+		bufio.NewReader(resp.Body),
+		func() error {
+			return resp.Body.Close()
+		},
+	}, nil
+
 }

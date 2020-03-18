@@ -3,6 +3,7 @@ package youtube
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -51,4 +52,51 @@ func safeFileName(name string) string {
 		}
 	}
 	return name
+}
+
+type byteReader interface {
+	ReadBytes(byte) ([]byte, error)
+	ReadByte() (byte, error)
+}
+
+func parseQuery(r byteReader, m map[string][][]byte) (err error) {
+	var (
+		b          []byte
+		key, val   string
+		err1, err2 error
+	)
+
+	for {
+		b, err = r.ReadBytes('&')
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+				break
+			}
+			return err
+		}
+		if i := bytes.Index(b, []byte{'='}); i >= 0 {
+			key, val = string(b[:i]), string(b[i+1:len(b)-1])
+		}
+		if len(key) == 0 {
+			continue
+		}
+
+		key, err1 = url.QueryUnescape(key)
+		if err1 != nil {
+			if err == nil {
+				err = err1
+			}
+			continue
+		}
+		val, err2 = url.QueryUnescape(string(val))
+		if err2 != nil {
+			if err == nil {
+				err = err2
+			}
+			continue
+		}
+		m[key] = append(m[key], []byte(val))
+	}
+	return
 }
