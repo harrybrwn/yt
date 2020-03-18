@@ -19,4 +19,4 @@ build:
 	go build -o youtube.a ./youtube
 	go build -o cmd.a ./cmd
 
-.PHONEY: all build test clean
+.PHONY: all build test clean

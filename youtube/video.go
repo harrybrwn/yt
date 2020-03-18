@@ -64,7 +64,6 @@ func NewVideo(id string) (*Video, error) {
 	query := make(map[string][][]byte)
 
 	if err = parseQuery(r, query); err != nil {
-		fmt.Println("parseQuery error")
 		return nil, err
 	}
 	if errcode := query["errorcode"]; len(errcode) != 0 {
@@ -107,6 +106,17 @@ func (v *Video) DownloadAudio(fname string) error {
 		}
 	}
 	return DownloadFromStream(high, fname)
+}
+
+func GetInfo(id string) (map[string][][]byte, error) {
+	r, err := info(id)
+	if err != nil {
+		return nil, err
+	}
+	defer r.cleanup()
+
+	query := make(map[string][][]byte)
+	return query, parseQuery(r, query)
 }
 
 type inforeader struct {

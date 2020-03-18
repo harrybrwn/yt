@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
@@ -30,14 +31,17 @@ var playlistCmd = &cobra.Command{
 	Short:   "A tool for downloading youtube playlists.",
 	Aliases: []string{"p", "plst"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
+		var (
+			err error
+			wg  sync.WaitGroup
+		)
 		audio, err := cmd.Flags().GetBool("audio")
 		if err != nil {
 			return err
 		}
 
 		for _, plstID := range args {
-			err = downloadPlaylist(plstID, audio)
+			err = downloadPlaylist(plstID, audio, &wg)
 			if err != nil {
 				return err
 			}
@@ -67,7 +71,7 @@ func varifyPlaylistPath(id string) (string, error) {
 	return p, nil
 }
 
-func downloadPlaylist(id string, getAudio bool) error {
+func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 	var err error
 	var v *youtube.Video
 
