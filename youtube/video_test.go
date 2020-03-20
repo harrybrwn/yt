@@ -74,9 +74,13 @@ func TestVideo_Err(t *testing.T) {
 	if err == nil {
 		t.Error("expected error")
 	}
-	fmt.Println(err)
 
 	err = initVideoData([]byte(""), &Video{})
+	if err == nil {
+		t.Error("expected error")
+	}
+
+	_, err = NewVideo("notavalidID")
 	if err == nil {
 		t.Error("expected error")
 	}
@@ -97,15 +101,6 @@ func TestInfo(t *testing.T) {
 	if len(m) == 0 {
 		t.Error("should not have zero length")
 	}
-
-	// if len(buf.Bytes()) == 0 {
-	// 	t.Error("zero length response")
-	// }
-	// buf, err = info("")
-	// v, _ := url.ParseQuery(buf.String())
-	// if len(v["errorcode"]) == 0 {
-	// 	t.Error("exected this to fail")
-	// }
 }
 
 func printJSON(m map[string]interface{}) {

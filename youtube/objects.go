@@ -21,6 +21,10 @@ type VideoData struct {
 		baseVideo
 		Keywords []string `json:"keywords"`
 	} `json:"videoDetails"`
+	PlayabilityStatus struct {
+		Status string `json:"status"`
+		Reason string `json:"reason"`
+	} `json:"playabilityStatus"`
 }
 
 // PlaylistInitData is meant to be an intermediate struct for going from raw

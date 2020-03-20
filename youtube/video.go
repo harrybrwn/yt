@@ -10,28 +10,10 @@ import (
 	"regexp"
 )
 
-const baseURL = "http://www.youtube.com/watch?v=%s"
-
-func videoURL(id string) string {
-	return fmt.Sprintf(baseURL, id)
-}
-
 var (
 	fullConfigREGEX    = regexp.MustCompile(`;ytplayer\.config\s*=\s*({.*?});`)
 	partialConfigREGEX = regexp.MustCompile(`"player_response":"{(.*)}"`)
 )
-
-func initVideoData(in []byte, v *Video) error {
-	vd := VideoData{}
-	err := json.Unmarshal(in, &vd)
-
-	v.baseVideo = vd.VideoDetails.baseVideo
-	v.Streams = vd.StreamingData.Formats
-	vstream, astream := sortStreams(&vd.StreamingData.AdaptiveFormats)
-	v.VideoStreams, v.AudioStreams = *vstream, *astream
-	v.FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
-	return err
-}
 
 // Video represents a youbube video.
 type Video struct {
@@ -67,7 +49,7 @@ func NewVideo(id string) (*Video, error) {
 		return nil, err
 	}
 	if errcode := query["errorcode"]; len(errcode) != 0 {
-		return nil, fmt.Errorf("youtube.NewVideo: %s", errcode[0])
+		return nil, fmt.Errorf("could not find video %s: %s", id, errcode[0])
 	}
 
 	pResp, ok := query["player_response"]
@@ -108,6 +90,7 @@ func (v *Video) DownloadAudio(fname string) error {
 	return DownloadFromStream(high, fname)
 }
 
+// GetInfo returns a map of low-level video information used by youtube.
 func GetInfo(id string) (map[string][][]byte, error) {
 	r, err := info(id)
 	if err != nil {
@@ -151,4 +134,21 @@ func info(id string) (*inforeader, error) {
 		},
 	}, nil
 
+}
+
+func initVideoData(in []byte, v *Video) error {
+	vd := VideoData{}
+	err := json.Unmarshal(in, &vd)
+
+	if vd.PlayabilityStatus.Status != "OK" {
+		return fmt.Errorf("%s: %s",
+			vd.PlayabilityStatus.Status, vd.PlayabilityStatus.Reason)
+	}
+
+	v.baseVideo = vd.VideoDetails.baseVideo
+	v.Streams = vd.StreamingData.Formats
+	vstream, astream := sortStreams(&vd.StreamingData.AdaptiveFormats)
+	v.VideoStreams, v.AudioStreams = *vstream, *astream
+	v.FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
+	return err
 }
