@@ -193,6 +193,9 @@ func asyncDownload(ids []string, fn videoHandler) (err error) {
 	)
 	wg.Add(len(ids))
 	for _, id := range ids {
+		if isurl(id) {
+			id = getid(id)
+		}
 		v, err = youtube.NewVideo(id)
 		if err != nil {
 			return err

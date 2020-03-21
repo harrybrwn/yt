@@ -21,8 +21,6 @@ func getPlaylistData(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// ioutil.WriteFile("test.html", b, 0644)
-
 	data := plistRendererRegex.FindAllSubmatch(b, -1)
 	if data == nil {
 		return nil, errors.New("could not find playlist data")

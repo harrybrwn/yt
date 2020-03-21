@@ -110,3 +110,14 @@ func TestRootRun(t *testing.T) {
 		t.Error("expected error")
 	}
 }
+
+func TestUtils(t *testing.T) {
+	url := "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
+
+	if !isurl(url) {
+		t.Error("this is a url")
+	}
+	if getid(url) != "kJQP7kiw5Fk" {
+		t.Error("got wrong video id")
+	}
+}
