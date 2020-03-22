@@ -99,6 +99,12 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			for i, arg := range args {
+				if isurl(arg) {
+					args[i] = getid(arg)
+				}
+			}
+
 			return handleVideos(args, func(v *youtube.Video) (err error) {
 				p := filepath.Join(path, v.FileName) + ext
 				if name == "audio" {
@@ -112,7 +118,8 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 			})
 		},
 	}
-	c.Flags().StringP("extension", "e", defaultExt, "file extension used for video download")
+	flags := c.Flags()
+	flags.StringP("extension", "e", defaultExt, "file extension used for video download")
 	return c
 }
 
