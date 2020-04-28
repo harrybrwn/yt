@@ -34,7 +34,7 @@ func TestMakeCommand(t *testing.T) {
 		t.Error(err)
 	}
 	if ext != ".txt" {
-		t.Error("wrong default extension")
+		t.Errorf("wrong default extension: got: '%s'; want '.txt'", ext)
 	}
 	if err := c.RunE(c, []string{"fR2xOh8CqMM"}); err == nil {
 		t.Error("expected error")
@@ -43,12 +43,12 @@ func TestMakeCommand(t *testing.T) {
 	if err := redirectPath(t, func(t *testing.T) {
 		c = makeCommand("video", "test videos", ".mp4")
 		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
-			t.Error("run failed")
+			t.Error("run failed", err)
 		}
 
 		c = makeCommand("audio", "test videos", ".mpa")
 		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
-			t.Error("run failed")
+			t.Error("run failed", err)
 		}
 	}); err != nil {
 		t.Error(err)

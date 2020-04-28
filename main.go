@@ -14,7 +14,9 @@
 
 package main
 
-import "github.com/harrybrwn/yt/cmd"
+import (
+	"github.com/harrybrwn/yt/cmd"
+)
 
 func main() {
 	cmd.Execute()

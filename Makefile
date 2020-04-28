@@ -13,7 +13,7 @@ test:
 clean:
 	go clean -testcache
 	go clean -i
-	$(RM) coverage.txt *.a
+	$(RM) coverage.txt *.a dist -r
 
 build:
 	go build -o youtube.a ./youtube

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -70,13 +71,55 @@ func Execute() {
 	}
 }
 
+var (
+	version, builtBy, commit, date string
+
+	verboseVersion = false
+
+	versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Show version info",
+		Run: func(cmd *cobra.Command, args []string) {
+			name := cmd.Root().Name()
+			if version == "" {
+				cmd.Printf("%s custom build\n", name)
+				return
+			}
+			cmd.Printf("%s version %s\n", name, version)
+			if !verboseVersion {
+				return
+			}
+			cmd.Printf("built by %s", builtBy)
+			if date != "" {
+				cmd.Printf(" at %s", date)
+			}
+			cmd.Printf("\n")
+			if commit != "" {
+				cmd.Printf("commit: %s\n", commit)
+			}
+		},
+	}
+)
+
+// SetInfo sets the version and compile info
+func SetInfo(v, built, cmt, dt string) {
+	version = v
+	builtBy = built
+	commit = cmt
+	date = dt
+}
+
 func init() {
+	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "show all version info")
 	videoCmd := makeCommand("video", "youtube videos", ".mp4")
 	videoCmd.Aliases = append(videoCmd.Aliases, "vid")
-	audioCmd := makeCommand("audio", "audio from youtube videos", ".mpa")
-	rootCmd.AddCommand(videoCmd)
-	rootCmd.AddCommand(audioCmd)
-	rootCmd.AddCommand(newinfoCmd(true))
+	rootCmd.AddCommand(
+		videoCmd,
+		makeCommand("audio", "audio from youtube videos", ".mpa"),
+		newinfoCmd(true),
+		testCmd,
+		versionCmd,
+	)
 
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
 	rootCmd.SetUsageTemplate(ytTemplate)
@@ -220,4 +263,63 @@ func asyncDownload(ids []string, fn videoHandler) (err error) {
 	}
 	wg.Wait()
 	return err
+}
+
+var testCmd = &cobra.Command{
+	Use:    "test",
+	Hidden: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		v, err := youtube.NewVideo(id)
+		if err != nil {
+			return err
+		}
+		fmt.Println(v.Title, v.ViewCount, v.LengthSeconds)
+
+		s := youtube.GetBestStream(&v.Streams)
+
+		u := s.GetURL()
+		fmt.Println(u)
+		for k, v := range u.Query() {
+			fmt.Printf("%s: %v\n", k, v)
+		}
+
+		// return nil
+
+		req := &http.Request{
+			Method:     "GET",
+			Proto:      "HTTP/1.1",
+			ProtoMajor: 1,
+			ProtoMinor: 1,
+			Host:       u.Host,
+			URL:        u,
+			Header:     http.Header{},
+		}
+		// fmt.Println(req)
+		// r, _ := http.NewRequest("GET", s.URL, nil)
+		// fmt.Println(r)
+		// return nil
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		for k, v := range resp.Header {
+			fmt.Printf("%s: %v\n", k, v)
+		}
+		println()
+
+		var (
+			n int = 1
+			b     = make([]byte, 32)
+		)
+		for n != 0 {
+			n, err = resp.Body.Read(b)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(b))
+		}
+
+		return nil
+	},
 }

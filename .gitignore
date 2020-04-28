@@ -14,6 +14,10 @@ test-coverage
 *.test.exe
 
 # Build
+/dist
+release-notes.*
+.goreleaser.yml
 yt
+/dist
 *.a
 *.o

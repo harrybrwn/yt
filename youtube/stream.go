@@ -3,6 +3,7 @@ package youtube
 import (
 	"errors"
 	"io/ioutil"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -54,6 +55,15 @@ func (s Stream) IsVideoStream() bool {
 	}
 	contentType, _ := splitMimeType(s.MimeType)
 	return strings.Contains(contentType, "video")
+}
+
+// GetURL will return are parsed version of the url. Returns nil on error.
+func (s *Stream) GetURL() *url.URL {
+	u, err := url.Parse(s.URL)
+	if err != nil {
+		return nil
+	}
+	return u
 }
 
 // GetBestStream returns the stream with the hightest width and height.
