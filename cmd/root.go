@@ -21,9 +21,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
+	"time"
 
+	"github.com/harrybrwn/yt/pkg/terminal"
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
 )
@@ -66,15 +70,26 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "show all version info")
+	rootCmd.AddCommand(
+		makeCommand("video", "youtube videos", ".mp4"),
+		makeCommand("audio", "audio from youtube videos", ".mpa"),
+		newinfoCmd(true),
+		testCmd,
+		versionCmd,
+	)
+
+	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
+	rootCmd.SetUsageTemplate(ytTemplate)
 	if err := rootCmd.Execute(); err != nil {
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
 var (
 	version, builtBy, commit, date string
 
-	verboseVersion = false
+	verboseVersion = true
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
@@ -109,22 +124,6 @@ func SetInfo(v, built, cmt, dt string) {
 	date = dt
 }
 
-func init() {
-	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "show all version info")
-	videoCmd := makeCommand("video", "youtube videos", ".mp4")
-	videoCmd.Aliases = append(videoCmd.Aliases, "vid")
-	rootCmd.AddCommand(
-		videoCmd,
-		makeCommand("audio", "audio from youtube videos", ".mpa"),
-		newinfoCmd(true),
-		testCmd,
-		versionCmd,
-	)
-
-	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
-	rootCmd.SetUsageTemplate(ytTemplate)
-}
-
 type videoHandler func(v *youtube.Video) error
 
 func makeCommand(name, short, defaultExt string) *cobra.Command {
@@ -132,7 +131,7 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 		Use:     fmt.Sprintf("%s [ids...]", name),
 		Short:   fmt.Sprintf("A tool for downloading %s", short),
 		Long:    fmt.Sprintf(`To download multiple videos use 'yt %s <id> <id>...'`, name),
-		Aliases: []string{name[:1], name[:2]},
+		Aliases: []string{name[:1], name[:3]},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ext, err := cmd.Flags().GetString("extension")
 			if err != nil {
@@ -150,14 +149,43 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 
 			return handleVideos(args, func(v *youtube.Video) (err error) {
 				p := filepath.Join(path, v.FileName) + ext
-				if name == "audio" {
-					return v.DownloadAudio(p)
-				} else if name == "video" {
-					err = v.Download(p)
-					cmd.Printf("Downloaded %s\n", v.Title)
-					return err
+				quit := make(chan struct{})
+				c := make(chan os.Signal)
+				signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+				go func() {
+					<-c
+					fmt.Println("\rStopped.          ")
+					terminal.CursorOn()
+					os.Exit(0)
+				}()
+				terminal.CursorOff()
+
+				switch name {
+				case "audio":
+					go func() {
+						err = v.DownloadAudio(p)
+						cmd.Printf("\r%s \"%s\"\n", terminal.Green("Downloaded"), v.Title)
+						close(quit)
+					}()
+				case "video":
+					go func() {
+						err = v.Download(p)
+						cmd.Printf("\r%s \"%s\"\n", terminal.Green("Downloaded"), v.Title)
+						close(quit)
+					}()
+				default:
+					return errors.New("bad command name")
 				}
-				return errors.New("bad command name")
+				fmt.Printf("%s...  ", terminal.Red("Downloading"))
+				for i := 0; ; i++ {
+					select {
+					case <-quit:
+						return err
+					default:
+						printLoadingChar(i)
+						time.Sleep(time.Second / 10)
+					}
+				}
 			})
 		},
 	}
@@ -216,6 +244,22 @@ func newinfoCmd(hidden bool) *cobra.Command {
 	infoCmd.Flags().BoolVar(&ic.fflags, "fflags", ic.fflags, "print out the fflags")
 	infoCmd.Flags().BoolVar(&ic.playerResp, "player-response", ic.playerResp, "print out the raw player response data")
 	return infoCmd
+}
+
+func printLoadingChar(i int) {
+	print("\b")
+	switch i % 4 {
+	case 0:
+		print("|")
+	case 1:
+		print("/")
+	case 2:
+		print("-")
+	case 3:
+		print("\\")
+	default:
+		panic("should not execute")
+	}
 }
 
 func printfflags(info map[string][][]byte) error {

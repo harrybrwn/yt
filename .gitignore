@@ -16,7 +16,6 @@ test-coverage
 # Build
 /dist
 release-notes.*
-.goreleaser.yml
 yt
 /dist
 *.a

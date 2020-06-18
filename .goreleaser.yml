@@ -1,0 +1,99 @@
+project_name: yt
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - <<: &base_build
+      binary: yt
+      main: main.go
+      env:
+        - CGO_ENABLED=0
+      ldflags:
+        - -s -w
+        - -X github.com/harrybrwn/yt/cmd.version={{.Version}}
+        - -X github.com/harrybrwn/yt/cmd.commit={{.Commit}}
+        - -X github.com/harrybrwn/yt/cmd.date={{.Date}}
+        - -X github.com/harrybrwn/yt/cmd.builtBy={{.Env.USER}}
+    id: linux
+    goos: [linux]
+    goarch: [386, amd64, arm64]
+  - <<: *base_build
+    id: macos
+    goos: [darwin]
+    goarch: [amd64]
+  - <<: *base_build
+    id: win
+    goos: [windows]
+    goarch: [386, amd64]
+
+archives:
+  - replacements: &reps
+      darwin: MacOS
+      linux: Linux
+      windows: Windows
+      "386": i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+
+nfpms:
+  - <<: &descr
+      description: Command line YouTube video and audio downloader
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    replacements: *reps
+    maintainer: Harry Brown <harrybrown98@gmail.com>
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/local
+
+brews:
+  - <<: *descr
+    name: yt
+    github:
+      owner: harrybrwn
+      name: homebrew-tap
+    homepage: https://github.com/harrybrwn/yt
+    commit_author:
+      name: yt-releasebot
+      email: harrybrown98@gmail.com
+    folder: Formula
+    test: |
+      system "#{bin}/yt version"
+    install: |
+      bin.install "yt"
+
+snapcrafts:
+  - <<: *descr
+    name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    summary: Command line YouTube video and audio downloader.
+    grade: stable
+    confinement: classic
+    publish: false
+
+release:
+  github:
+    owner: harrybrwn
+    name: yt
+  prerelease: auto
+  name_template: "{{.ProjectName }} version {{.Version}}"
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}_{{ .ShortCommit }}"
+changelog:
+  skip: true
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+
