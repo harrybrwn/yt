@@ -20,6 +20,11 @@ build:
 	go build -o youtube.a ./youtube
 	go build -o cmd.a ./cmd
 
+dist:
+	goreleaser release \
+		--rm-dist \
+		--parallelism 8
+
 snapshot:
 	goreleaser release --skip-publish --snapshot
 

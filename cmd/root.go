@@ -18,13 +18,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/harrybrwn/yt/pkg/terminal"
@@ -78,7 +75,6 @@ func Execute() {
 		testCmd,
 		versionCmd,
 	)
-
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
 	rootCmd.SetUsageTemplate(ytTemplate)
 	if err := rootCmd.Execute(); err != nil {
@@ -90,8 +86,7 @@ var (
 	version, builtBy, commit, date string
 
 	verboseVersion = true
-
-	versionCmd = &cobra.Command{
+	versionCmd     = &cobra.Command{
 		Use:   "version",
 		Short: "Show version info",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -147,46 +142,20 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 				}
 			}
 
-			return handleVideos(args, func(v *youtube.Video) (err error) {
+			err = handleVideos(args, func(v *youtube.Video) (err error) {
 				p := filepath.Join(path, v.FileName) + ext
-				quit := make(chan struct{})
-				c := make(chan os.Signal)
-				signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-				go func() {
-					<-c
-					fmt.Println("\rStopped.          ")
-					terminal.CursorOn()
-					os.Exit(0)
-				}()
-				terminal.CursorOff()
-
 				switch name {
 				case "audio":
-					go func() {
-						err = v.DownloadAudio(p)
-						cmd.Printf("\r%s \"%s\"\n", terminal.Green("Downloaded"), v.Title)
-						close(quit)
-					}()
+					err = v.DownloadAudio(p)
 				case "video":
-					go func() {
-						err = v.Download(p)
-						cmd.Printf("\r%s \"%s\"\n", terminal.Green("Downloaded"), v.Title)
-						close(quit)
-					}()
+					err = v.Download(p)
 				default:
 					return errors.New("bad command name")
 				}
-				fmt.Printf("%s...  ", terminal.Red("Downloading"))
-				for i := 0; ; i++ {
-					select {
-					case <-quit:
-						return err
-					default:
-						printLoadingChar(i)
-						time.Sleep(time.Second / 10)
-					}
-				}
+				cmd.Printf("\r%s \"%s\"\n", terminal.Green("Downloaded"), v.FileName+ext)
+				return err
 			})
+			return err
 		},
 	}
 	flags := c.Flags()
@@ -194,20 +163,42 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 	return c
 }
 
-func handleVideos(ids []string, fn videoHandler) error {
+func handleVideos(ids []string, fn videoHandler) (err error) {
 	if len(ids) == 0 {
 		return errors.New("no Arguments\n\nUse \"yt [command] --help\" for more information about a command")
 	}
+	setCursorOnHandler()
+	quit := make(chan struct{})
+	terminal.CursorOff()
+	defer terminal.CursorOn()
+
 	if len(ids) > 1 {
-		return asyncDownload(ids, fn)
+		go func() {
+			err = asyncDownload(ids, fn)
+			close(quit)
+		}()
 	} else if len(ids) == 1 {
-		v, err := youtube.NewVideo(ids[0])
-		if err != nil {
-			return err
-		}
-		return fn(v)
+		go func() {
+			var v *youtube.Video
+			v, err = youtube.NewVideo(ids[0])
+			if err != nil {
+				close(quit)
+				return
+			}
+			err = fn(v)
+			close(quit)
+		}()
 	}
-	return nil
+	for i := 0; ; i++ {
+		select {
+		case <-quit:
+			return err
+		default:
+			fmt.Printf("\r%s...  ", terminal.Red("Downloading"))
+			printLoadingChar(i)
+			time.Sleep(time.Second / 10)
+		}
+	}
 }
 
 func newinfoCmd(hidden bool) *cobra.Command {
@@ -313,57 +304,6 @@ var testCmd = &cobra.Command{
 	Use:    "test",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id := args[0]
-		v, err := youtube.NewVideo(id)
-		if err != nil {
-			return err
-		}
-		fmt.Println(v.Title, v.ViewCount, v.LengthSeconds)
-
-		s := youtube.GetBestStream(&v.Streams)
-
-		u := s.GetURL()
-		fmt.Println(u)
-		for k, v := range u.Query() {
-			fmt.Printf("%s: %v\n", k, v)
-		}
-
-		// return nil
-
-		req := &http.Request{
-			Method:     "GET",
-			Proto:      "HTTP/1.1",
-			ProtoMajor: 1,
-			ProtoMinor: 1,
-			Host:       u.Host,
-			URL:        u,
-			Header:     http.Header{},
-		}
-		// fmt.Println(req)
-		// r, _ := http.NewRequest("GET", s.URL, nil)
-		// fmt.Println(r)
-		// return nil
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		for k, v := range resp.Header {
-			fmt.Printf("%s: %v\n", k, v)
-		}
-		println()
-
-		var (
-			n int = 1
-			b     = make([]byte, 32)
-		)
-		for n != 0 {
-			n, err = resp.Body.Read(b)
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(b))
-		}
-
 		return nil
 	},
 }

@@ -52,7 +52,7 @@ nfpms:
     formats:
       - deb
       - rpm
-    bindir: /usr/local
+    bindir: /usr/local/bin
 
 brews:
   - <<: *descr
@@ -72,23 +72,23 @@ brews:
 
 snapcrafts:
   - <<: *descr
+    name: go-yt
     name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
     summary: Command line YouTube video and audio downloader.
     grade: stable
-    confinement: classic
-    publish: false
+    confinement: strict
+    publish: true
 
 release:
   github:
     owner: harrybrwn
     name: yt
   prerelease: auto
-  name_template: "{{.ProjectName }} version {{.Version}}"
 
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}_{{ .ShortCommit }}"
+  name_template: "{{ .Tag }}-{{ .ShortCommit }}"
 changelog:
   skip: true
   sort: asc
