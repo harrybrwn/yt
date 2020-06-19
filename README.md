@@ -15,7 +15,7 @@ go install github.com/harrybrwn/yt
 ```
 #### Homebrew
 ```
-brew install harrybrw/tap/yt
+brew install harrybrwn/tap/yt
 ```
 #### Snap
 ```
