@@ -3,6 +3,8 @@ TODO
 *.json
 *.mp4
 *.mpa
+*.jpg
+*.png
 *.py
 *.html
 

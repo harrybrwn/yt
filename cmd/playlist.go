@@ -19,7 +19,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
+	"github.com/harrybrwn/yt/pkg/terminal"
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
 )
@@ -40,10 +42,21 @@ var playlistCmd = &cobra.Command{
 			return err
 		}
 
+		setCursorOnHandler()
+		terminal.CursorOff()
+		defer terminal.CursorOn()
+		go func() {
+			for i := 0; ; i++ {
+				fmt.Printf("\r%s...  ", terminal.Red("Downloading"))
+				printLoadingChar(i)
+				time.Sleep(loadingInterval)
+			}
+		}()
+
 		for _, plstID := range args {
 			err = downloadPlaylist(plstID, audio, &wg)
 			if err != nil {
-				return err
+				panic(err)
 			}
 		}
 		wg.Wait()
@@ -51,7 +64,7 @@ var playlistCmd = &cobra.Command{
 	},
 }
 
-func varifyPlaylistPath(id string) (string, error) {
+func verifyPlaylistPath(id string) (string, error) {
 	var err error
 	p := path
 	if p == cwd {
@@ -75,15 +88,17 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 	var err error
 	var v *youtube.Video
 
-	path, err = varifyPlaylistPath(id)
-	if err != nil {
-		return err
-	}
-
 	plst, err := youtube.NewPlaylist(id)
 	if err != nil {
 		return err
 	}
+	path = filepath.Join(path, plst.Title)
+	if _, err = os.Stat(path); os.IsNotExist(err) {
+		if err = os.Mkdir(path, 0755); err != nil {
+			return err
+		}
+	}
+
 	for vID := range plst.VideoIds() {
 		wg.Add(1)
 		v, err = youtube.NewVideo(vID)
@@ -91,15 +106,19 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 			return err
 		}
 		go func() {
+			name := filepath.Join(path, v.FileName)
 			if getAudio {
-				err = v.DownloadAudio(filepath.Join(path, v.FileName) + ".mpa")
+				name += ".mpa"
+				err = v.DownloadAudio(name)
 			} else {
-				err = v.Download(filepath.Join(path, v.FileName) + pExt)
+				name += pExt
+				err = v.Download(name)
 			}
 
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
+			fmt.Printf("\r%s %s\n", terminal.Green("Downloaded"), name)
 			wg.Done()
 		}()
 	}

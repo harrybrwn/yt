@@ -10,7 +10,7 @@ import (
 
 func TestVarifyPlaylistPath(t *testing.T) {
 	err := redirectPath(t, func(t *testing.T) {
-		p, err := varifyPlaylistPath("some_id")
+		p, err := verifyPlaylistPath("some_id")
 
 		if err != nil {
 			t.Error(err)

@@ -41,6 +41,9 @@ func Green(s string) string { return color(32, s) }
 // Red returns s but colored red
 func Red(s string) string { return color(31, s) }
 
+// Yellow returns s but colored yellow
+func Yellow(s string) string { return color(35, s) }
+
 func color(color int, s string) string {
 	if controlChar == "" {
 		return s

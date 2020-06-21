@@ -1,11 +1,8 @@
 GO=go
-GOTEST=go test -v -cover
-INSTALL=go install
 
 all: clean test
 
 install:
-	# $(INSTALL) github.com/harrybrwn/yt
 	go install
 
 test:

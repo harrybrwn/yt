@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/harrybrwn/errs"
 	"github.com/harrybrwn/yt/pkg/terminal"
 	"github.com/harrybrwn/yt/youtube"
 	"github.com/spf13/cobra"
@@ -67,16 +68,17 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "show all version info")
+	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "Show all version info")
+	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", "", "Download path (default \"$PWD\")")
+	rootCmd.SetUsageTemplate(ytTemplate)
 	rootCmd.AddCommand(
 		makeCommand("video", "youtube videos", ".mp4"),
 		makeCommand("audio", "audio from youtube videos", ".mpa"),
 		newinfoCmd(true),
 		testCmd,
 		versionCmd,
+		completionCmd,
 	)
-	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", cwd, "download path")
-	rootCmd.SetUsageTemplate(ytTemplate)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -108,6 +110,31 @@ var (
 				cmd.Printf("commit: %s\n", commit)
 			}
 		},
+	}
+
+	completionCmd = &cobra.Command{
+		Use:   "completion",
+		Short: "Print a completion script to stdout.",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			root := cmd.Root()
+			out := cmd.OutOrStdout()
+			if len(args) == 0 {
+				return errors.New("no shell type given")
+			}
+			switch args[0] {
+			case "zsh":
+				return root.GenZshCompletion(out)
+			case "ps", "powershell":
+				return root.GenPowerShellCompletion(out)
+			case "bash":
+				return root.GenBashCompletion(out)
+			case "fish":
+				return root.GenFishCompletion(out, false)
+			}
+			return errs.New("unknown shell type")
+		},
+		ValidArgs: []string{"zsh", "bash", "ps", "powershell", "fish"},
+		Aliases:   []string{"comp"},
 	}
 )
 
@@ -159,9 +186,12 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 		},
 	}
 	flags := c.Flags()
-	flags.StringP("extension", "e", defaultExt, "file extension used for video download")
+	flags.StringP("extension", "e", defaultExt, "File extension used for video download")
 	return c
 }
+
+// const loadingInterval = time.Second / 10
+const loadingInterval = time.Second / 15
 
 func handleVideos(ids []string, fn videoHandler) (err error) {
 	if len(ids) == 0 {
@@ -180,13 +210,13 @@ func handleVideos(ids []string, fn videoHandler) (err error) {
 	} else if len(ids) == 1 {
 		go func() {
 			var v *youtube.Video
+			defer close(quit)
 			v, err = youtube.NewVideo(ids[0])
 			if err != nil {
-				close(quit)
+				print("\r")
 				return
 			}
 			err = fn(v)
-			close(quit)
 		}()
 	}
 	for i := 0; ; i++ {
@@ -196,7 +226,7 @@ func handleVideos(ids []string, fn videoHandler) (err error) {
 		default:
 			fmt.Printf("\r%s...  ", terminal.Red("Downloading"))
 			printLoadingChar(i)
-			time.Sleep(time.Second / 10)
+			time.Sleep(loadingInterval)
 		}
 	}
 }
@@ -232,8 +262,8 @@ func newinfoCmd(hidden bool) *cobra.Command {
 		},
 		Hidden: hidden,
 	}
-	infoCmd.Flags().BoolVar(&ic.fflags, "fflags", ic.fflags, "print out the fflags")
-	infoCmd.Flags().BoolVar(&ic.playerResp, "player-response", ic.playerResp, "print out the raw player response data")
+	infoCmd.Flags().BoolVar(&ic.fflags, "fflags", ic.fflags, "Print out the fflags")
+	infoCmd.Flags().BoolVar(&ic.playerResp, "player-response", ic.playerResp, "Print out the raw player response data")
 	return infoCmd
 }
 
@@ -304,6 +334,15 @@ var testCmd = &cobra.Command{
 	Use:    "test",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("no video id")
+		}
+		id := args[0]
+		v, err := youtube.NewVideo(id)
+		if err != nil {
+			return err
+		}
+		fmt.Println(v.Author)
 		return nil
 	},
 }
