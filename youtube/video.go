@@ -5,32 +5,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 )
 
 var (
+	// ErrNoPlayerData is an error returned if the player data for a video
+	// could not be found
+	ErrNoPlayerData = errors.New("could not find player data")
+
+	host               = "www.youtube.com"
 	fullConfigREGEX    = regexp.MustCompile(`;ytplayer\.config\s*=\s*({.*?});`)
 	partialConfigREGEX = regexp.MustCompile(`"player_response":"{(.*)}"`)
 )
 
-// Video represents a youbube video.
+// Video id a youtube video.
 type Video struct {
 	baseVideo
 
 	// FileName is a file system safe version of the video's title.
 	FileName string
-
 	// A slice of stream objects containing both audio and video
 	Streams []Stream
-
 	// A slice of streams containing only video
 	VideoStreams []Stream
-
 	// A slice of streams containing only audio
-	AudioStreams []Stream
-
+	AudioStreams   []Stream
+	Thumbnails     []Thumbnail
 	downloadStream Stream
 }
 
@@ -41,10 +45,9 @@ func NewVideo(id string) (*Video, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.cleanup()
+	defer r.Close()
 
 	query := make(map[string][][]byte)
-
 	if err = parseQuery(r, query); err != nil {
 		return nil, err
 	}
@@ -54,24 +57,21 @@ func NewVideo(id string) (*Video, error) {
 
 	pResp, ok := query["player_response"]
 	if !ok || len(pResp) < 1 {
-		return nil, errors.New("could not find video player data")
+		return nil, ErrNoPlayerData
 	}
-
 	return vid, initVideoData(pResp[0], vid)
 }
 
 // Download will download the video given a file name.
 //
 // It is suggested that '.mp4' is used as the extension
-// in the file name but is not manditory.
+// in the file name but is not mandatory.
 func (v *Video) Download(fname string) error {
 	s := GetBestStream(&v.Streams)
 	return DownloadFromStream(s, fname)
 }
 
 // DownloadAudio will download the video's audio given a file name.
-//
-// The suggested file extension is '.mpa'
 func (v *Video) DownloadAudio(fname string) error {
 	var (
 		max  = 0
@@ -96,10 +96,33 @@ func GetInfo(id string) (map[string][][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.cleanup()
+	defer r.Close()
 
 	query := make(map[string][][]byte)
 	return query, parseQuery(r, query)
+}
+
+// Thumbnail is a video thumbnail
+type Thumbnail struct {
+	Height int
+	Width  int
+	URL    string
+}
+
+// Download will download the thumbnail to a file on disk
+func (t *Thumbnail) Download(filename string) error {
+	resp, err := client.Get(t.URL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = io.Copy(file, resp.Body)
+	return err
 }
 
 type inforeader struct {
@@ -107,48 +130,52 @@ type inforeader struct {
 	cleanup func() error
 }
 
-func info(id string) (*inforeader, error) {
-	req := &http.Request{
+type byteReaderCloser interface {
+	byteReader
+	io.ReadCloser
+}
+
+func (ir *inforeader) Close() error {
+	return ir.cleanup()
+}
+
+func info(id string) (byteReaderCloser, error) {
+	var req = http.Request{
 		Method:     "GET",
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
 		Header:     make(http.Header),
-		Host:       "www.youtube.com",
+		Host:       host,
 		URL: &url.URL{
 			Scheme:   "https",
-			Host:     "www.youtube.com",
+			Host:     host,
 			Path:     "/get_video_info",
 			RawQuery: url.Values{"video_id": {id}}.Encode(),
 		},
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(&req)
 	if err != nil {
 		return nil, err
 	}
-
 	return &inforeader{
 		bufio.NewReader(resp.Body),
-		func() error {
-			return resp.Body.Close()
-		},
+		resp.Body.Close,
 	}, nil
-
 }
 
-func initVideoData(in []byte, v *Video) error {
+func initVideoData(in []byte, v *Video) (err error) {
 	vd := VideoData{}
-	err := json.Unmarshal(in, &vd)
-
-	if vd.PlayabilityStatus.Status != "OK" {
-		return fmt.Errorf("%s: %s",
-			vd.PlayabilityStatus.Status, vd.PlayabilityStatus.Reason)
+	if err = json.Unmarshal(in, &vd); err != nil {
+		return err
 	}
-
 	v.baseVideo = vd.VideoDetails.baseVideo
 	v.Streams = vd.StreamingData.Formats
-	vstream, astream := sortStreams(&vd.StreamingData.AdaptiveFormats)
-	v.VideoStreams, v.AudioStreams = *vstream, *astream
+	v.VideoStreams, v.AudioStreams = sortStreams(vd.StreamingData.AdaptiveFormats)
 	v.FileName = safeFileName(vd.VideoDetails.baseVideo.Title)
+	v.Thumbnails = vd.VideoDetails.Thumbnail.Thumbnails
+	if vd.PlayabilityStatus.Status != "OK" {
+		err = vd.PlayabilityStatus
+	}
 	return err
 }

@@ -11,7 +11,12 @@ import (
 )
 
 var (
-	client = &http.Client{}
+	client = &http.Client{
+		Transport: &userAgentTransport{
+			agent: agent,
+			inner: http.DefaultTransport,
+		},
+	}
 )
 
 const (
@@ -43,6 +48,19 @@ func get(urlStr string) ([]byte, error) {
 	var buf bytes.Buffer
 	_, err = buf.ReadFrom(resp.Body)
 	return buf.Bytes(), err
+}
+
+type userAgentTransport struct {
+	agent string
+	inner http.RoundTripper
+}
+
+func (uat *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if uat.inner == nil {
+		uat.inner = http.DefaultTransport
+	}
+	req.Header.Set("User-Agent", uat.agent)
+	return uat.inner.RoundTrip(req)
 }
 
 func safeFileName(name string) string {

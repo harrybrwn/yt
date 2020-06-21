@@ -1,6 +1,7 @@
 package youtube
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -41,6 +42,23 @@ func TestNewVideo(t *testing.T) {
 	}
 }
 
+func TestMimeType(t *testing.T) {
+	// v, err := NewVideo("O9Ks3_8Nq1s")
+	v, err := NewVideo("FBkZ2TJZZUY")
+	if err != nil {
+		t.Fatal(err)
+	}
+	streams := make([]Stream, 0)
+	streams = append(streams, v.Streams...)
+	// streams = append(streams, v.AudioStreams...)
+	// streams = append(streams, v.VideoStreams...)
+	for _, s := range streams {
+		fmt.Println(s.MimeType)
+		// fmt.Printf("`%s`,\n", s.MimeType)
+		// fmt.Println(splitMimeType(s.MimeType))
+	}
+}
+
 func TestDownloads(t *testing.T) {
 	v, err := NewVideo("O9Ks3_8Nq1s")
 	if err != nil {
@@ -74,12 +92,10 @@ func TestVideo_Err(t *testing.T) {
 	if err == nil {
 		t.Error("expected error")
 	}
-
 	err = initVideoData([]byte(""), &Video{})
 	if err == nil {
 		t.Error("expected error")
 	}
-
 	_, err = NewVideo("notavalidID")
 	if err == nil {
 		t.Error("expected error")
@@ -91,7 +107,7 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer r.cleanup()
+	defer r.Close()
 
 	m := make(map[string][][]byte)
 	err = parseQuery(r, m)
@@ -101,6 +117,36 @@ func TestInfo(t *testing.T) {
 	if len(m) == 0 {
 		t.Error("should not have zero length")
 	}
+}
+
+func Test(t *testing.T) {
+	// id := "FidhD-izZnk"
+	id := "O9Ks3_8Nq1s"
+	// NewVideo(id)
+	v := &Video{}
+	r, err := info(id)
+	if err != nil {
+		t.Error(err)
+	}
+
+	query := make(map[string][][]byte)
+	parseQuery(r, query)
+	in := query["player_response"][0]
+	if err = initVideoData(in, v); err != nil {
+		t.Error(err)
+	}
+	// if err = v.Download("./test.mp4"); err != nil {
+	// 	t.Error(err)
+	// }
+	// v.Thumbnails[0].Download("thumbnail")
+	s := GetBestStream(&v.Streams)
+	var b bytes.Buffer
+	if _, err = s.WriteTo(&b); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestMp4Tags(t *testing.T) {
 }
 
 func printJSON(m map[string]interface{}) {

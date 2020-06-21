@@ -1,7 +1,9 @@
 package youtube
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"regexp"
@@ -12,53 +14,55 @@ import (
 // to the actual youtube video data.
 type Stream struct {
 	// to be honest I don't know what this is but it's important for
-	// deturmining whether the stream is a video or audio stream, or both.
-	MimeType string `json:"mimeType"`
-
+	// determining whether the stream is a video or audio stream, or both.
+	MimeType MimeType
 	// The url for the raw video data
 	URL string `json:"url"`
-
 	// Height of the video in pixels.
-	// If Height is equeal to zero, it is an audio-only stream.
+	// If Height is equal to zero, it is an audio-only stream.
 	Height int `json:"height"`
-
 	// Width of the video in pixels.
-	// If Width is equeal to zero, it is an audio-only stream.
+	// If Width is equal to zero, it is an audio-only stream.
 	Width int `json:"width"`
-
 	// Bitrate of the video's audio.
 	Bitrate int `json:"bitrate"`
-
 	// size of the video
 	ContentLength string `json:"contentLength"`
 }
 
+// WriteTo will write the stream data to an io.Writer
+func (s Stream) WriteTo(w io.Writer) (int64, error) {
+	resp, err := client.Get(s.URL)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	return io.Copy(w, resp.Body)
+}
+
 // IsDualStream returns true if the stream contains both audio and video
 func (s Stream) IsDualStream() bool {
-	_, codecs := splitMimeType(s.MimeType)
-	return len(codecs) > 1
+	return len(s.MimeType.Codecs) > 1
 }
 
 // IsAudioStream returns true if the stream contains audio
 func (s Stream) IsAudioStream() bool {
-	if s.IsDualStream() {
+	if len(s.MimeType.Codecs) > 1 {
 		return true
 	}
-	contentType, _ := splitMimeType(s.MimeType)
-	return strings.Contains(contentType, "audio")
+	return strings.Contains(s.MimeType.ContentType, "audio")
 }
 
 // IsVideoStream returns true if the stream contains video
 func (s Stream) IsVideoStream() bool {
-	if s.IsDualStream() {
+	if len(s.MimeType.Codecs) > 1 {
 		return true
 	}
-	contentType, _ := splitMimeType(s.MimeType)
-	return strings.Contains(contentType, "video")
+	return strings.Contains(s.MimeType.ContentType, "video")
 }
 
 // GetURL will return are parsed version of the url. Returns nil on error.
-func (s *Stream) GetURL() *url.URL {
+func (s Stream) GetURL() *url.URL {
 	u, err := url.Parse(s.URL)
 	if err != nil {
 		return nil
@@ -93,21 +97,43 @@ func DownloadFromStream(s *Stream, fname string) error {
 	return ioutil.WriteFile(fname, b, 0644)
 }
 
+var (
+	codecsRegex   = regexp.MustCompile(`;\s?codecs=`)
+	mimeTypeRegex = regexp.MustCompile(`^"(.*?);\s?codecs=\\"(.*?)\\""$`)
+)
+
+// MimeType is a mimetype
+type MimeType struct {
+	ContentType string
+	Codecs      []string
+}
+
+// UnmarshalJSON makes the MimeType struct implement the
+// json.Unmarshaler interface
+func (m *MimeType) UnmarshalJSON(b []byte) error {
+	result := mimeTypeRegex.FindAllStringSubmatch(string(b), -1)
+	m.ContentType = result[0][1]
+	m.Codecs = strings.Split(result[0][2], ", ")
+	return nil
+}
+
+var _ json.Unmarshaler = (*MimeType)(nil)
+
 func splitMimeType(s string) (string, []string) {
-	match := regexp.MustCompile(`;\scodecs=`).Split(s, 2)
+	match := codecsRegex.Split(s, 2)
 	return match[0], regexp.MustCompile(`,\s`).Split(match[1], 2)
 }
 
-// sorts streams into two groups, NOT by some numeric value. The two groups
+// sorts streams into two groups, NOT by numeric value. The two groups
 // are streams containing audio and streams containing video.
-func sortStreams(streams *[]Stream) (*[]Stream, *[]Stream) {
+func sortStreams(streams []Stream) ([]Stream, []Stream) {
 	var (
 		vsc, asc int = 0, 0
 		s        Stream
 	)
 
 	// find length of each []Stream
-	for _, s = range *streams {
+	for _, s = range streams {
 		if s.IsVideoStream() {
 			vsc++
 		} else if s.IsAudioStream() {
@@ -118,7 +144,7 @@ func sortStreams(streams *[]Stream) (*[]Stream, *[]Stream) {
 	vstreams := make([]Stream, vsc)
 	astreams := make([]Stream, asc)
 	vsc, asc = 0, 0
-	for _, s = range *streams {
+	for _, s = range streams {
 		if s.IsVideoStream() {
 			vstreams[vsc] = s
 			vsc++
@@ -127,5 +153,10 @@ func sortStreams(streams *[]Stream) (*[]Stream, *[]Stream) {
 			asc++
 		}
 	}
-	return &vstreams, &astreams
+	return vstreams, astreams
 }
+
+var (
+	_ io.WriterTo      = (*Stream)(nil)
+	_ json.Unmarshaler = (*MimeType)(nil)
+)

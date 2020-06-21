@@ -2,71 +2,72 @@ package youtube
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"regexp"
+	"net/http"
+	"net/url"
 )
 
-var (
-	basePlisturl       = "https://www.youtube.com/playlist?list=%s"
-	plistRendererRegex = regexp.MustCompile(`"playlistVideoListRenderer":({.*})`)
-)
-
-func playlistURL(id string) string {
-	return fmt.Sprintf(basePlisturl, id)
-}
-
-func getPlaylistData(id string) ([]byte, error) {
-	b, err := get(playlistURL(id))
-	if err != nil {
-		return nil, err
-	}
-	data := plistRendererRegex.FindAllSubmatch(b, -1)
-	if data == nil {
-		return nil, errors.New("could not find playlist data")
-	}
-	raw := data[0][1]
-
-	opens, closes := 0, 0 // referring to number of open and closed curly braces
-	for k := range raw {
-		if raw[k] == '{' {
-			opens++
-		} else if raw[k] == '}' {
-			closes++
-		}
-		if opens == closes {
-			return raw[:k+1], nil
-		}
-	}
-	return nil, errors.New("could not parse response")
-}
-
-// Playlist represents a youtube playlist.
+// Playlist is a youtube playlist
 type Playlist struct {
-	Contents []struct {
-		PlaylistVideoRenderer struct {
-			VideoID            string `json:"videoId"`
-			LengthSeconds      string `json:"lengthSeconds"`
-			NavigationEndpoint struct {
-				WatchEndpoint struct {
-					VideoID          string `json:"videoId"`
-					PlaylistID       string `json:"playlistId"`
-					Index            int    `json:"index"`
-					StartTimeSeconds int    `json:"startTimeSeconds"`
-				} `json:"watchEndpoint"`
-			} `json:"navigationEndpoint"`
-		} `json:"playlistVideoRenderer"`
-	} `json:"contents"`
+	Title       string `json:"title"`
+	Author      string `json:"author"`
+	Views       int    `json:"views"`
+	Description string `json:"description"`
+	Videos      []struct {
+		Author                       string  `json:"author"`
+		Privacy                      string  `json:"privacy"`
+		Comments                     string  `json:"comments"`
+		Keywords                     string  `json:"keywords"`
+		TimeCreated                  int     `json:"time_created"`
+		Rating                       float64 `json:"rating"`
+		Added                        string  `json:"added"`
+		Likes                        int     `json:"likes"`
+		CcLicense                    bool    `json:"cc_license"`
+		CategoryID                   int     `json:"category_id"`
+		SessionData                  string  `json:"session_data"`
+		IsHd                         bool    `json:"is_hd"`
+		EndscreenAutoplaySessionData string  `json:"endscreen_autoplay_session_data"`
+		UserID                       string  `json:"user_id"`
+		Title                        string  `json:"title"`
+		Views                        string  `json:"views"`
+		LengthSeconds                int     `json:"length_seconds"`
+		Thumbnail                    string  `json:"thumbnail"`
+		IsCc                         bool    `json:"is_cc"`
+		Duration                     string  `json:"duration"`
+		ID                           string  `json:"encrypted_id"`
+		Description                  string  `json:"description"`
+		Dislikes                     int     `json:"dislikes"`
+	} `json:"video"`
 }
 
 // NewPlaylist creates a playlist object from a playlist id.
 func NewPlaylist(id string) (*Playlist, error) {
-	var p Playlist
-	data, err := getPlaylistData(id)
+	var req = http.Request{
+		Method:     "GET",
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+		Host:       host,
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   host,
+			Path:   "/list_ajax",
+			RawQuery: url.Values{
+				"list":            {id},
+				"action_get_list": {"1"},
+				"style":           {"json"},
+				"hl":              {"en"},
+				"index":           {"0"},
+			}.Encode(),
+		},
+	}
+	resp, err := client.Do(&req)
 	if err != nil {
 		return nil, err
 	}
-	return &p, json.Unmarshal(data, &p)
+	var p Playlist
+	defer resp.Body.Close()
+	return &p, json.NewDecoder(resp.Body).Decode(&p)
 }
 
 // VideoIds returns a channel containing all of the video ids in the playlist.
@@ -74,8 +75,8 @@ func (p *Playlist) VideoIds() chan string {
 	c := make(chan string)
 	go func() {
 		defer close(c)
-		for _, content := range p.Contents {
-			c <- content.PlaylistVideoRenderer.VideoID
+		for _, vid := range p.Videos {
+			c <- vid.ID
 		}
 	}()
 	return c

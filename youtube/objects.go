@@ -1,5 +1,7 @@
 package youtube
 
+import "fmt"
+
 // Represents video meta-data for a youtube video
 type baseVideo struct {
 	Author        string `json:"author"`
@@ -19,12 +21,21 @@ type VideoData struct {
 	} `json:"streamingData"`
 	VideoDetails struct {
 		baseVideo
-		Keywords []string `json:"keywords"`
+		Keywords  []string `json:"keywords"`
+		Thumbnail struct {
+			Thumbnails []Thumbnail
+		}
 	} `json:"videoDetails"`
-	PlayabilityStatus struct {
-		Status string `json:"status"`
-		Reason string `json:"reason"`
-	} `json:"playabilityStatus"`
+	PlayabilityStatus *playabilityStatus `json:"playabilityStatus"`
+}
+
+type playabilityStatus struct {
+	Status string `json:"status"`
+	Reason string `json:"reason"`
+}
+
+func (ps *playabilityStatus) Error() string {
+	return fmt.Sprintf("%s: %s", ps.Status, ps.Reason)
 }
 
 // PlaylistInitData is meant to be an intermediate struct for going from raw
