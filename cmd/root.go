@@ -56,30 +56,36 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.
 `
 )
 
-var rootCmd = &cobra.Command{
-	Use:          "yt <command>",
-	Short:        "A cli tool for downloading youtube videos.",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.New("no Arguments\n\nUse \"yt help\" for more information")
-	},
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+// RootCommand returns the root command
+func RootCommand() *cobra.Command {
+	var rootCmd = &cobra.Command{
+		Use:          "yt <command>",
+		Short:        "A cli tool for downloading youtube videos.",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return errors.New("no Arguments\n\nUse \"yt help\" for more information")
+		},
+	}
 	versionCmd.Flags().BoolVarP(&verboseVersion, "verbose", "v", verboseVersion, "Show all version info")
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", "", "Download path (default \"$PWD\")")
 	rootCmd.SetUsageTemplate(ytTemplate)
 	rootCmd.AddCommand(
 		makeCommand("video", "youtube videos", ".mp4"),
 		makeCommand("audio", "audio from youtube videos", ".mpa"),
+		playlistCmd,
 		newinfoCmd(true),
 		testCmd,
 		versionCmd,
 		completionCmd,
 	)
-	if err := rootCmd.Execute(); err != nil {
+	return rootCmd
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	root := RootCommand()
+	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -224,8 +230,7 @@ func handleVideos(ids []string, fn videoHandler) (err error) {
 		case <-quit:
 			return err
 		default:
-			fmt.Printf("\r%s...  ", terminal.Red("Downloading"))
-			printLoadingChar(i)
+			fmt.Printf("\r%s...  %c", terminal.Red("Downloading"), getLoadingChar(i))
 			time.Sleep(loadingInterval)
 		}
 	}
@@ -267,20 +272,23 @@ func newinfoCmd(hidden bool) *cobra.Command {
 	return infoCmd
 }
 
-func printLoadingChar(i int) {
-	print("\b")
+func getLoadingChar(i int) rune {
 	switch i % 4 {
 	case 0:
-		print("|")
+		return '|'
 	case 1:
-		print("/")
+		return '/'
 	case 2:
-		print("-")
+		return '-'
 	case 3:
-		print("\\")
+		return '\\'
 	default:
-		panic("should not execute")
+		panic("modulus is broken")
 	}
+}
+
+func printLoadingChar(i int) {
+	fmt.Printf("\b%c", getLoadingChar(i))
 }
 
 func printfflags(info map[string][][]byte) error {
@@ -334,15 +342,6 @@ var testCmd = &cobra.Command{
 	Use:    "test",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return errors.New("no video id")
-		}
-		id := args[0]
-		v, err := youtube.NewVideo(id)
-		if err != nil {
-			return err
-		}
-		fmt.Println(v.Author)
 		return nil
 	},
 }

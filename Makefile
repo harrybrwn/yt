@@ -22,7 +22,10 @@ dist:
 		--rm-dist \
 		--parallelism 8
 
+docs:
+	go run docs/gen.go docs
+
 snapshot:
 	goreleaser release --skip-publish --snapshot
 
-.PHONY: all build test clean
+.PHONY: all build test clean docs

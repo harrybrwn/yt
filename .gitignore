@@ -1,5 +1,4 @@
 TODO
-
 *.json
 *.mp4
 *.mpa
@@ -22,3 +21,6 @@ yt
 /dist
 *.a
 *.o
+
+# Docs
+docs/*.1

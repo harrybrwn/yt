@@ -8,22 +8,6 @@ import (
 	"time"
 )
 
-func TestVarifyPlaylistPath(t *testing.T) {
-	err := redirectPath(t, func(t *testing.T) {
-		p, err := verifyPlaylistPath("some_id")
-
-		if err != nil {
-			t.Error(err)
-		}
-		if _, err = os.Stat(p); os.IsNotExist(err) {
-			t.Error("path should exits")
-		}
-	})
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestMakeCommand(t *testing.T) {
 	c := makeCommand("test", "test command", ".txt")
 	if c.Use != "test [ids...]" {
@@ -105,6 +89,7 @@ func redirectPath(t *testing.T, fn func(t *testing.T)) error {
 }
 
 func TestRootRun(t *testing.T) {
+	rootCmd := RootCommand()
 	err := rootCmd.RunE(rootCmd, []string{})
 	if err == nil {
 		t.Error("expected error")

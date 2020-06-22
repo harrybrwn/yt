@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
+	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -28,6 +29,8 @@ type Stream struct {
 	Bitrate int `json:"bitrate"`
 	// size of the video
 	ContentLength string `json:"contentLength"`
+
+	SignatureCipher string `json:"signatureCipher"`
 }
 
 // WriteTo will write the stream data to an io.Writer
@@ -62,12 +65,20 @@ func (s Stream) IsVideoStream() bool {
 }
 
 // GetURL will return are parsed version of the url. Returns nil on error.
-func (s Stream) GetURL() *url.URL {
-	u, err := url.Parse(s.URL)
-	if err != nil {
-		return nil
+func (s Stream) GetURL() (*url.URL, error) {
+	var u = s.URL
+	if s.URL == "" {
+		q, err := url.ParseQuery(s.SignatureCipher)
+		if err != nil {
+			return nil, err
+		}
+		u = q.Get("url")
+		if u == "" {
+			return nil, errors.New("no url found")
+		}
+		return url.Parse(u)
 	}
-	return u
+	return url.Parse(u)
 }
 
 // GetBestStream returns the stream with the hightest width and height.
@@ -87,14 +98,26 @@ func GetBestStream(c *[]Stream) *Stream {
 
 // DownloadFromStream accepts a stream and downloads it to a given file name.
 func DownloadFromStream(s *Stream, fname string) error {
-	if len(s.URL) == 0 {
-		return errors.New("could not find stream url")
-	}
-	b, err := get(s.URL)
+	url, err := s.GetURL()
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(fname, b, 0644)
+	resp, err := client.Do(&http.Request{
+		Method: "GET",
+		Proto:  "HTTP/1.1",
+		URL:    url,
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	file, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = io.Copy(file, resp.Body)
+	return err
 }
 
 var (

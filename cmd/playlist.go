@@ -47,16 +47,16 @@ var playlistCmd = &cobra.Command{
 		defer terminal.CursorOn()
 		go func() {
 			for i := 0; ; i++ {
-				fmt.Printf("\r%s...  ", terminal.Red("Downloading"))
-				printLoadingChar(i)
+				fmt.Printf("\r%s... %c", terminal.Red("Downloading"), getLoadingChar(i))
 				time.Sleep(loadingInterval)
 			}
 		}()
 
-		for _, plstID := range args {
-			err = downloadPlaylist(plstID, audio, &wg)
+		wg.Add(len(args))
+		for _, id := range args {
+			err = downloadPlaylist(id, audio, &wg)
 			if err != nil {
-				panic(err)
+				fmt.Printf("\r%s: %v\n", terminal.Red("Error"), err)
 			}
 		}
 		wg.Wait()
@@ -64,29 +64,12 @@ var playlistCmd = &cobra.Command{
 	},
 }
 
-func verifyPlaylistPath(id string) (string, error) {
-	var err error
-	p := path
-	if p == cwd {
-		p = filepath.Join(p, id)
-	}
-	p, err = filepath.Abs(p)
-	if err != nil {
-		return "", err
-	}
-
-	if _, err = os.Stat(p); os.IsNotExist(err) {
-		err = os.Mkdir(p, 0755)
-		if err != nil {
-			return "", err
-		}
-	}
-	return p, nil
-}
-
 func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
-	var err error
-	var v *youtube.Video
+	defer wg.Done()
+	var (
+		err error
+		v   *youtube.Video
+	)
 
 	plst, err := youtube.NewPlaylist(id)
 	if err != nil {
@@ -99,14 +82,16 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 		}
 	}
 
-	for vID := range plst.VideoIds() {
+	for _, video := range plst.Videos {
 		wg.Add(1)
-		v, err = youtube.NewVideo(vID)
-		if err != nil {
-			return err
-		}
-		go func() {
-			name := filepath.Join(path, v.FileName)
+		go func(id string) {
+			defer wg.Done()
+			var name string
+			v, err = youtube.NewVideo(id)
+			if err != nil {
+				goto Error
+			}
+			name = filepath.Join(path, v.FileName)
 			if getAudio {
 				name += ".mpa"
 				err = v.DownloadAudio(name)
@@ -114,13 +99,14 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 				name += pExt
 				err = v.Download(name)
 			}
-
 			if err != nil {
-				fmt.Println("Error:", err)
+				goto Error
 			}
 			fmt.Printf("\r%s %s\n", terminal.Green("Downloaded"), name)
-			wg.Done()
-		}()
+			return
+		Error:
+			fmt.Printf("\r%s: %v\n", terminal.Red("Error"), err)
+		}(video.ID)
 	}
 	return nil
 }
@@ -128,5 +114,4 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 func init() {
 	playlistCmd.Flags().BoolP("audio", "a", false, "download the audio from all the videos in the specifies playlist")
 	playlistCmd.Flags().StringVarP(&pExt, "extension", "e", ".mp4", "file extension used for video download")
-	rootCmd.AddCommand(playlistCmd)
 }

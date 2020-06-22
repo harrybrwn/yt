@@ -22,3 +22,14 @@ brew install harrybrwn/tap/yt
 snap install go-yt
 ```
 
+
+### Completion
+#### zsh
+```
+source <(yt completion zsh)
+compdef _yt yt
+```
+#### bash
+```
+source <(yt completion bash)
+```

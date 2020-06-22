@@ -16,8 +16,9 @@ type baseVideo struct {
 // and the Video object.
 type VideoData struct {
 	StreamingData struct {
-		AdaptiveFormats []Stream `json:"adaptiveFormats"`
-		Formats         []Stream `json:"formats"`
+		AdaptiveFormats  []Stream `json:"adaptiveFormats"`
+		Formats          []Stream `json:"formats"`
+		ExpiresInSeconds string   `json:"expiresInSeconds"`
 	} `json:"streamingData"`
 	VideoDetails struct {
 		baseVideo
@@ -36,6 +37,12 @@ type playabilityStatus struct {
 
 func (ps *playabilityStatus) Error() string {
 	return fmt.Sprintf("%s: %s", ps.Status, ps.Reason)
+}
+
+type ytConfig struct {
+	Args struct {
+		PlayerResponse string `json:"player_response"`
+	} `json:"args"`
 }
 
 // PlaylistInitData is meant to be an intermediate struct for going from raw

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,13 +14,9 @@ import (
 )
 
 var (
-	// ErrNoPlayerData is an error returned if the player data for a video
-	// could not be found
-	ErrNoPlayerData = errors.New("could not find player data")
-
 	host               = "www.youtube.com"
-	fullConfigREGEX    = regexp.MustCompile(`;ytplayer\.config\s*=\s*({.*?});`)
-	partialConfigREGEX = regexp.MustCompile(`"player_response":"{(.*)}"`)
+	fullConfigRegex    = regexp.MustCompile(`;ytplayer\.config\s*=\s*({.*?});`)
+	partialConfigRegex = regexp.MustCompile(`"player_response":"{(.*)}"`)
 )
 
 // Video id a youtube video.
@@ -33,9 +30,8 @@ type Video struct {
 	// A slice of streams containing only video
 	VideoStreams []Stream
 	// A slice of streams containing only audio
-	AudioStreams   []Stream
-	Thumbnails     []Thumbnail
-	downloadStream Stream
+	AudioStreams []Stream
+	Thumbnails   []Thumbnail
 }
 
 // NewVideo creates and returns a new Video object.
@@ -55,11 +51,22 @@ func NewVideo(id string) (*Video, error) {
 		return nil, fmt.Errorf("could not find video %s: %s", id, errcode[0])
 	}
 
-	pResp, ok := query["player_response"]
-	if !ok || len(pResp) < 1 {
-		return nil, ErrNoPlayerData
+	playerresp, ok := query["player_response"]
+	if !ok || len(playerresp) < 1 {
+		return nil, fmt.Errorf("could not find player data for %s", id)
 	}
-	return vid, initVideoData(pResp[0], vid)
+	err = initVideoData(playerresp[0], vid)
+	if err != nil {
+		// if the first try failed, try getting the data from
+		// the html
+		var conf *ytConfig
+		conf, err = videoDataFromHTML(id)
+		if err != nil {
+			return nil, err
+		}
+		err = initVideoData([]byte(conf.Args.PlayerResponse), vid)
+	}
+	return vid, err
 }
 
 // Download will download the video given a file name.
@@ -178,4 +185,25 @@ func initVideoData(in []byte, v *Video) (err error) {
 		err = vd.PlayabilityStatus
 	}
 	return err
+}
+
+func videoDataFromHTML(id string) (*ytConfig, error) {
+	resp, err := http.Get(fmt.Sprintf("https://%s/watch?v=%s", host, id))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	raw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	result := fullConfigRegex.FindSubmatch(raw)
+	if len(result) < 2 {
+		return nil, errors.New("could not find player_response data")
+	}
+	conf := &ytConfig{}
+	if err = json.Unmarshal(result[1], conf); err != nil {
+		return nil, err
+	}
+	return conf, nil
 }

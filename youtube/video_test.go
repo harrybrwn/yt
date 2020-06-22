@@ -1,7 +1,6 @@
 package youtube
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -119,34 +118,23 @@ func TestInfo(t *testing.T) {
 	}
 }
 
-func Test(t *testing.T) {
-	// id := "FidhD-izZnk"
-	id := "O9Ks3_8Nq1s"
-	// NewVideo(id)
-	v := &Video{}
-	r, err := info(id)
+func TestGetFromHTML(t *testing.T) {
+	id := "9bZkp7q19f0"
+	v, err := NewVideo(id)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-
-	query := make(map[string][][]byte)
-	parseQuery(r, query)
-	in := query["player_response"][0]
-	if err = initVideoData(in, v); err != nil {
-		t.Error(err)
-	}
-	// if err = v.Download("./test.mp4"); err != nil {
-	// 	t.Error(err)
-	// }
-	// v.Thumbnails[0].Download("thumbnail")
-	s := GetBestStream(&v.Streams)
-	var b bytes.Buffer
-	if _, err = s.WriteTo(&b); err != nil {
-		t.Error(err)
+	for _, s := range v.Streams {
+		if _, err := s.GetURL(); err != nil {
+			t.Error(err)
+		}
 	}
 }
 
-func TestMp4Tags(t *testing.T) {
+func Test(t *testing.T) {
+	// id := "FidhD-izZnk"
+	// id := "O9Ks3_8Nq1s"
+	// id := "9bZkp7q19f0"
 }
 
 func printJSON(m map[string]interface{}) {
