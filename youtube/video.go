@@ -26,11 +26,11 @@ type Video struct {
 	// FileName is a file system safe version of the video's title.
 	FileName string
 	// A slice of stream objects containing both audio and video
-	Streams []Stream
+	Streams Streams
 	// A slice of streams containing only video
-	VideoStreams []Stream
+	VideoStreams Streams
 	// A slice of streams containing only audio
-	AudioStreams []Stream
+	AudioStreams AudioStreams
 	Thumbnails   []Thumbnail
 }
 
@@ -74,7 +74,7 @@ func NewVideo(id string) (*Video, error) {
 // It is suggested that '.mp4' is used as the extension
 // in the file name but is not mandatory.
 func (v *Video) Download(fname string) error {
-	s := GetBestStream(&v.Streams)
+	s := GetBestStream(v.Streams)
 	return DownloadFromStream(s, fname)
 }
 
@@ -104,7 +104,6 @@ func GetInfo(id string) (map[string][][]byte, error) {
 		return nil, err
 	}
 	defer r.Close()
-
 	query := make(map[string][][]byte)
 	return query, parseQuery(r, query)
 }
@@ -165,10 +164,14 @@ func info(id string) (byteReaderCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, errors.New(resp.Status)
+	}
 	return &inforeader{
 		bufio.NewReader(resp.Body),
 		resp.Body.Close,
-	}, nil
+	}, err
 }
 
 func initVideoData(in []byte, v *Video) (err error) {

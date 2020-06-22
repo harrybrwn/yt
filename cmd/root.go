@@ -1,4 +1,4 @@
-// Copyright © 2019 Harrison Brown harrybrown98@gmail.com
+// Copyright © 2020 Harrison Brown harrybrown98@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,8 +70,8 @@ func RootCommand() *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&path, "path", "p", "", "Download path (default \"$PWD\")")
 	rootCmd.SetUsageTemplate(ytTemplate)
 	rootCmd.AddCommand(
-		makeCommand("video", "youtube videos", ".mp4"),
-		makeCommand("audio", "audio from youtube videos", ".mpa"),
+		newDownloadCommand("video", "youtube videos", ".mp4"),
+		newDownloadCommand("audio", "audio from youtube videos", ".mpa"),
 		playlistCmd,
 		newinfoCmd(true),
 		testCmd,
@@ -154,7 +154,7 @@ func SetInfo(v, built, cmt, dt string) {
 
 type videoHandler func(v *youtube.Video) error
 
-func makeCommand(name, short, defaultExt string) *cobra.Command {
+func newDownloadCommand(name, short, defaultExt string) *cobra.Command {
 	c := &cobra.Command{
 		Use:     fmt.Sprintf("%s [ids...]", name),
 		Short:   fmt.Sprintf("A tool for downloading %s", short),
@@ -196,8 +196,7 @@ func makeCommand(name, short, defaultExt string) *cobra.Command {
 	return c
 }
 
-// const loadingInterval = time.Second / 10
-const loadingInterval = time.Second / 15
+const loadingInterval = time.Second / 5
 
 func handleVideos(ids []string, fn videoHandler) (err error) {
 	if len(ids) == 0 {
@@ -309,30 +308,26 @@ func printfflags(info map[string][][]byte) error {
 }
 
 func asyncDownload(ids []string, fn videoHandler) (err error) {
-	var (
-		wg sync.WaitGroup
-		v  *youtube.Video
-		e  error
-	)
+	var wg sync.WaitGroup
 	wg.Add(len(ids))
 	for _, id := range ids {
-		if isurl(id) {
-			id = getid(id)
-		}
-		v, err = youtube.NewVideo(id)
-		if err != nil {
-			return err
-		}
-		go func() {
-			e = fn(v)
-			if e != nil {
+		go func(id string) {
+			defer wg.Done()
+			if isurl(id) {
+				id = getid(id)
+			}
+			v, err := youtube.NewVideo(id)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			if e := fn(v); e != nil {
 				log.Println(e)
 				if err == nil {
 					err = e
 				}
 			}
-			wg.Done()
-		}()
+		}(id)
 	}
 	wg.Wait()
 	return err

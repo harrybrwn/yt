@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+func Test(t *testing.T) {
+	// id := "FidhD-izZnk"
+	// id := "O9Ks3_8Nq1s"
+	// id := "9bZkp7q19f0"
+}
+
 func TestNewVideo(t *testing.T) {
 	v, err := NewVideo("Nq5LMGtBmis")
 	if err != nil {
@@ -41,20 +47,25 @@ func TestNewVideo(t *testing.T) {
 	}
 }
 
-func TestMimeType(t *testing.T) {
-	// v, err := NewVideo("O9Ks3_8Nq1s")
-	v, err := NewVideo("FBkZ2TJZZUY")
+func TestNewPlaylist(t *testing.T) {
+	id := "PLFsQleAWXsj_4yDeebiIADdH5FMayBiJo"
+	p, err := NewPlaylist(id)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	streams := make([]Stream, 0)
-	streams = append(streams, v.Streams...)
-	// streams = append(streams, v.AudioStreams...)
-	// streams = append(streams, v.VideoStreams...)
-	for _, s := range streams {
-		fmt.Println(s.MimeType)
-		// fmt.Printf("`%s`,\n", s.MimeType)
-		// fmt.Println(splitMimeType(s.MimeType))
+	if p == nil {
+		t.Error("got <nil> playlist")
+	}
+
+	c := 0
+	for ID := range p.VideoIds() {
+		c++
+		_ = ID
+	}
+
+	_, err = NewPlaylist("")
+	if err == nil {
+		t.Error("expected error")
 	}
 }
 
@@ -84,6 +95,11 @@ func TestDownloads(t *testing.T) {
 	if err = os.Remove(file); err != nil {
 		t.Error(err)
 	}
+	thumbnail := temp() + "_" + "thumbnail"
+	if err = v.Thumbnails[0].Download(thumbnail); err != nil {
+		t.Error(err)
+	}
+	os.Remove(thumbnail)
 }
 
 func TestVideo_Err(t *testing.T) {
@@ -98,6 +114,10 @@ func TestVideo_Err(t *testing.T) {
 	_, err = NewVideo("notavalidID")
 	if err == nil {
 		t.Error("expected error")
+	}
+	err = &playabilityStatus{Status: "test", Reason: "testing"}
+	if err.Error() != "test: testing" {
+		t.Error("wrong error message")
 	}
 }
 
@@ -131,10 +151,12 @@ func TestGetFromHTML(t *testing.T) {
 	}
 }
 
-func Test(t *testing.T) {
-	// id := "FidhD-izZnk"
-	// id := "O9Ks3_8Nq1s"
-	// id := "9bZkp7q19f0"
+func TestSafeFileName(t *testing.T) {
+	origin := `\/:*?"<>|.`
+	safe := safeFileName(origin)
+	if safe != "" {
+		t.Errorf(`'safeFileName' is not getting rid of the right characters. Expected: "", got: "%s"`, safe)
+	}
 }
 
 func printJSON(m map[string]interface{}) {

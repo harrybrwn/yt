@@ -1,4 +1,4 @@
-// Copyright © 2019 Harrison Brown harrybrown98@gmail.com
+// Copyright © 2020 Harrison Brown harrybrown98@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,11 +66,6 @@ var playlistCmd = &cobra.Command{
 
 func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 	defer wg.Done()
-	var (
-		err error
-		v   *youtube.Video
-	)
-
 	plst, err := youtube.NewPlaylist(id)
 	if err != nil {
 		return err
@@ -82,12 +77,12 @@ func downloadPlaylist(id string, getAudio bool, wg *sync.WaitGroup) error {
 		}
 	}
 
+	wg.Add(len(plst.Videos))
 	for _, video := range plst.Videos {
-		wg.Add(1)
 		go func(id string) {
 			defer wg.Done()
 			var name string
-			v, err = youtube.NewVideo(id)
+			v, err := youtube.NewVideo(id)
 			if err != nil {
 				goto Error
 			}

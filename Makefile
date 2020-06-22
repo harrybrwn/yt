@@ -11,16 +11,18 @@ test:
 clean:
 	go clean -testcache
 	go clean -i
-	$(RM) coverage.txt *.a dist -r
+	$(RM) gocoverage.txt coverage.txt *.a dist -r
 
 build:
 	go build -o youtube.a ./youtube
 	go build -o cmd.a ./cmd
 
 dist:
+	if [ ! -f release-notes.md ]; then echo 'no release notes'; exit 1; fi
 	goreleaser release \
 		--rm-dist \
-		--parallelism 8
+		--parallelism 8 \
+		--release-notes release-notes.md
 
 docs:
 	go run docs/gen.go docs

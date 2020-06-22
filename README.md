@@ -9,10 +9,6 @@ A cli for downloading youtube videos
 
 
 ### Installation
-#### With Go
-```
-go install github.com/harrybrwn/yt
-```
 #### Homebrew
 ```
 brew install harrybrwn/tap/yt
@@ -20,8 +16,18 @@ brew install harrybrwn/tap/yt
 #### Snap
 ```
 snap install go-yt
+alias yt=go-yt
+```
+#### With Go
+```
+go install github.com/harrybrwn/yt
 ```
 
+### Examples
+```sh
+yt video https://www.youtube.com/watch?v=1234
+yt video 1234 # same result with the same video id
+```
 
 ### Completion
 #### zsh

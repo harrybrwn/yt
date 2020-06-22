@@ -2,12 +2,10 @@ package youtube
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 var (
@@ -24,41 +22,12 @@ const (
 	agent    = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/500.0 (KHTML, like Gecko) Chrome/70.0.0.0 Safari/500.0"
 )
 
-func get(urlStr string) ([]byte, error) {
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
-	req := &http.Request{
-		Method: "GET",
-		Host:   parsedURL.Host,
-		Proto:  "HTTP/1.1",
-		Header: http.Header{
-			"User-Agent": []string{fmt.Sprintf("%s%d", agent, time.Now().Nanosecond())},
-		},
-		URL: parsedURL,
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var buf bytes.Buffer
-	_, err = buf.ReadFrom(resp.Body)
-	return buf.Bytes(), err
-}
-
 type userAgentTransport struct {
 	agent string
 	inner http.RoundTripper
 }
 
 func (uat *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if uat.inner == nil {
-		uat.inner = http.DefaultTransport
-	}
 	req.Header.Set("User-Agent", uat.agent)
 	return uat.inner.RoundTrip(req)
 }
@@ -79,9 +48,8 @@ type byteReader interface {
 
 func parseQuery(r byteReader, m map[string][][]byte) (err error) {
 	var (
-		b          []byte
-		key, val   string
-		err1, err2 error
+		b        []byte
+		key, val string
 	)
 
 	for {
@@ -100,19 +68,13 @@ func parseQuery(r byteReader, m map[string][][]byte) (err error) {
 			continue
 		}
 
-		key, err1 = url.QueryUnescape(key)
-		if err1 != nil {
-			if err == nil {
-				err = err1
-			}
-			continue
+		key, err = url.QueryUnescape(key)
+		if err != nil {
+			return err
 		}
-		val, err2 = url.QueryUnescape(string(val))
-		if err2 != nil {
-			if err == nil {
-				err = err2
-			}
-			continue
+		val, err = url.QueryUnescape(string(val))
+		if err != nil {
+			return err
 		}
 		m[key] = append(m[key], []byte(val))
 	}

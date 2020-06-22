@@ -9,6 +9,7 @@ TODO
 
 # Testing
 coverage.html
+gocoverage.txt
 coverage.txt
 test-coverage
 *.test

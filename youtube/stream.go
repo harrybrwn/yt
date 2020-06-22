@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -50,23 +51,20 @@ func (s Stream) IsDualStream() bool {
 
 // IsAudioStream returns true if the stream contains audio
 func (s Stream) IsAudioStream() bool {
-	if len(s.MimeType.Codecs) > 1 {
-		return true
-	}
-	return strings.Contains(s.MimeType.ContentType, "audio")
+	return s.IsDualStream() || strings.Contains(s.MimeType.ContentType, "audio")
 }
 
 // IsVideoStream returns true if the stream contains video
 func (s Stream) IsVideoStream() bool {
-	if len(s.MimeType.Codecs) > 1 {
-		return true
-	}
-	return strings.Contains(s.MimeType.ContentType, "video")
+	return s.IsDualStream() || strings.Contains(s.MimeType.ContentType, "video")
 }
 
 // GetURL will return are parsed version of the url. Returns nil on error.
 func (s Stream) GetURL() (*url.URL, error) {
 	var u = s.URL
+	if s.URL != "" {
+		return url.Parse(s.URL)
+	}
 	if s.URL == "" {
 		q, err := url.ParseQuery(s.SignatureCipher)
 		if err != nil {
@@ -83,10 +81,10 @@ func (s Stream) GetURL() (*url.URL, error) {
 
 // GetBestStream returns the stream with the hightest width and height.
 // Only works for streams containing video.
-func GetBestStream(c *[]Stream) *Stream {
+func GetBestStream(c []Stream) *Stream {
 	maxh, maxw := 0, 0
 	var s Stream
-	for _, strm := range *c {
+	for _, strm := range c {
 		if strm.Height > maxh && strm.Width > maxw {
 			maxh = strm.Height
 			maxw = strm.Width
@@ -120,16 +118,40 @@ func DownloadFromStream(s *Stream, fname string) error {
 	return err
 }
 
-var (
-	codecsRegex   = regexp.MustCompile(`;\s?codecs=`)
-	mimeTypeRegex = regexp.MustCompile(`^"(.*?);\s?codecs=\\"(.*?)\\""$`)
-)
+// Streams is a slice of streams that is sorted by width and height
+type Streams []Stream
+
+func (ss Streams) Len() int { return len(ss) }
+
+func (ss Streams) Swap(i, j int) { ss[i], ss[j] = ss[j], ss[i] }
+
+// Less sorts a slice of streams by width and height
+func (ss Streams) Less(i, j int) bool {
+	return ss[i].Height+ss[i].Width < ss[j].Height+ss[j].Width
+}
+
+// AudioStreams is a slice of Streams that is sorted by bitrate
+type AudioStreams []Stream
+
+func (as AudioStreams) Len() int { return len(as) }
+
+func (as AudioStreams) Swap(i, j int) { as[i], as[j] = as[j], as[i] }
+
+// Less sorts a slice of audio streams by bitrate
+func (as AudioStreams) Less(i, j int) bool {
+	return as[i].Bitrate < as[j].Bitrate
+}
 
 // MimeType is a mimetype
 type MimeType struct {
 	ContentType string
 	Codecs      []string
 }
+
+var (
+	codecsRegex   = regexp.MustCompile(`;\s?codecs=`)
+	mimeTypeRegex = regexp.MustCompile(`^"(.*?);\s?codecs=\\"(.*?)\\""$`)
+)
 
 // UnmarshalJSON makes the MimeType struct implement the
 // json.Unmarshaler interface
@@ -182,4 +204,5 @@ func sortStreams(streams []Stream) ([]Stream, []Stream) {
 var (
 	_ io.WriterTo      = (*Stream)(nil)
 	_ json.Unmarshaler = (*MimeType)(nil)
+	_ sort.Interface   = (*Streams)(nil)
 )

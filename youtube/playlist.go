@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Playlist is a youtube playlist
@@ -65,9 +66,27 @@ func NewPlaylist(id string) (*Playlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	var p Playlist
+	var e error
 	defer resp.Body.Close()
-	return &p, json.NewDecoder(resp.Body).Decode(&p)
+	switch resp.StatusCode {
+	case http.StatusOK:
+		var p Playlist
+		return &p, json.NewDecoder(resp.Body).Decode(&p)
+	default:
+		e = &respError{}
+	}
+	if err = json.NewDecoder(resp.Body).Decode(&e); err != nil {
+		return nil, err
+	}
+	return nil, e
+}
+
+type respError struct {
+	Errors []string `json:"errors"`
+}
+
+func (e *respError) Error() string {
+	return strings.Join(e.Errors, ", ")
 }
 
 // VideoIds returns a channel containing all of the video ids in the playlist.

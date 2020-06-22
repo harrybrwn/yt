@@ -9,7 +9,7 @@ import (
 )
 
 func TestMakeCommand(t *testing.T) {
-	c := makeCommand("test", "test command", ".txt")
+	c := newDownloadCommand("test", "test command", ".txt")
 	if c.Use != "test [ids...]" {
 		t.Error("wrong usage message")
 	}
@@ -25,12 +25,12 @@ func TestMakeCommand(t *testing.T) {
 	}
 
 	if err := redirectPath(t, func(t *testing.T) {
-		c = makeCommand("video", "test videos", ".mp4")
+		c = newDownloadCommand("video", "test videos", ".mp4")
 		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed", err)
 		}
 
-		c = makeCommand("audio", "test videos", ".mpa")
+		c = newDownloadCommand("audio", "test videos", ".mpa")
 		if err := c.RunE(c, []string{"fR2xOh8CqMM", "O9Ks3_8Nq1s"}); err != nil {
 			t.Error("run failed", err)
 		}
@@ -97,6 +97,21 @@ func TestRootRun(t *testing.T) {
 }
 
 func TestUtils(t *testing.T) {
+	tests := []struct {
+		url, id string
+	}{
+		{"https://www.youtube.com/watch?v=kJQP7kiw5Fk", "kJQP7kiw5Fk"},
+		{"https://www.youtube.com/watch?v=HaeH6KYCcmM", "HaeH6KYCcmM"},
+		// {"https://www.youtube.com/playlist?list=PLy2PCKGkKRVaSxaWg9_N6wuQ2kTpF3tIi", "PLy2PCKGkKRVaSxaWg9_N6wuQ2kTpF3tIi"},
+	}
+	for _, tst := range tests {
+		if !isurl(tst.url) {
+			t.Errorf("%s should be detected as a url", tst.url)
+		}
+		if id := getid(tst.url); id != tst.id {
+			t.Errorf("got wrong id (%s) from url %s", id, tst.url)
+		}
+	}
 	url := "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
 
 	if !isurl(url) {
